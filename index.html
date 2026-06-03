@@ -11,7 +11,7 @@
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;font-size:13px}
 a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .app{display:flex;flex:1;overflow:hidden}
-.sidebar{width:250px;flex-shrink:0;background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.sidebar{width:250px;flex-shrink:0;background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;position:relative}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .sh{padding:14px 16px;border-bottom:1px solid var(--bdr)}
 .logo{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--tx3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
@@ -135,6 +135,45 @@ tr:hover td{background:var(--sur2)}
 .proj-box h1{font-size:18px;font-weight:600;margin-bottom:4px;color:var(--tx)}
 .proj-box p{font-size:12.5px;color:var(--tx3);margin-bottom:24px}
 .proj-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:300px;overflow-y:auto}
+/* === Wallpaper feature === */
+#wallpaperBg{position:fixed;inset:0;z-index:-1;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0;transition:opacity .4s}
+#wallpaperBg.active{opacity:1}
+#wallpaperBg.active::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);backdrop-filter:blur(2px)}
+body:has(#wallpaperBg.active){background:transparent}
+
+/* Glass effects when wallpaper active */
+#wallpaperBg.active ~ .app{background:transparent}
+#wallpaperBg.active ~ .app .main{background:transparent}
+#wallpaperBg.active ~ .app .toolbar{background:rgba(255,255,255,0.82)!important;backdrop-filter:blur(10px)}
+#wallpaperBg.active ~ .app .fbar{background:rgba(255,255,255,0.78)!important;backdrop-filter:blur(8px)}
+#wallpaperBg.active ~ .app .cards-area{background:transparent!important}
+#wallpaperBg.active ~ .app .card{background:rgba(255,255,255,0.88)!important;backdrop-filter:blur(6px)}
+#wallpaperBg.active ~ .app table{background:rgba(255,255,255,0.92)!important}
+#wallpaperBg.active ~ .app th{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(6px)}
+
+/* Sidebar internals translucent when wallpaper active */
+#wallpaperBg.active ~ .app .sidebar .sh{background:transparent!important}
+#wallpaperBg.active ~ .app .sidebar .tsw{background:rgba(255,255,255,0.35)!important;backdrop-filter:blur(6px);border-bottom-color:rgba(0,0,0,0.06)}
+#wallpaperBg.active ~ .app .sidebar .tsw input{background:rgba(255,255,255,0.7)!important}
+#wallpaperBg.active ~ .app .sidebar .tlist{background:transparent!important}
+#wallpaperBg.active ~ .app .sidebar .ti{background:transparent}
+
+/* Floating wallpaper button */
+.wp-btn{position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4361ee);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(124,58,237,.4);display:flex;align-items:center;justify-content:center;z-index:1000;transition:transform .15s}
+.wp-btn:hover{transform:scale(1.08)}
+.wp-btn svg{width:22px;height:22px}
+
+/* Wallpaper picker panel */
+.wp-panel{position:fixed;bottom:80px;right:20px;width:340px;max-height:70vh;background:#fff;border:1px solid var(--bdr);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px;z-index:1001;display:none;overflow-y:auto}
+.wp-panel.open{display:block}
+.wp-panel h4{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--tx)}
+.wp-panel .wp-cat{font-size:10.5px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}
+.wp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.wp-thumb{aspect-ratio:1;border-radius:6px;background-size:cover;background-position:center;cursor:pointer;border:2px solid transparent;transition:border-color .12s;position:relative}
+.wp-thumb:hover{border-color:#7c3aed}
+.wp-thumb.sel{border-color:#7c3aed}
+.wp-thumb.none{background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 6px,#e5e7eb 6px,#e5e7eb 12px);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);font-weight:600}
+
 .proj-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--bdr);border-radius:var(--r);cursor:pointer;transition:all .12s;background:var(--sur)}
 .proj-item:hover{border-color:var(--blue);background:var(--bblue)}
 .proj-item.sel{border-color:var(--blue);background:var(--bblue)}
@@ -170,6 +209,7 @@ tr:hover td{background:var(--sur2)}
     </div>
   </div>
 </div>
+<div id="wallpaperBg"></div>
 <div class="app">
   <div class="sidebar">
     <div class="sh">
@@ -1020,6 +1060,121 @@ async function exportCSV(){
   }
 }
 
+</script>
+<!-- Wallpaper picker UI -->
+<button class="wp-btn" onclick="toggleWpPanel()" title="Change wallpaper" aria-label="Wallpaper">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5-9 9"/></svg>
+</button>
+<div class="wp-panel" id="wpPanel">
+  <h4>Project Wallpaper</h4>
+  <div style="font-size:11px;color:var(--tx3);margin-bottom:4px">Saved per project</div>
+  <div id="wpGridHost"></div>
+</div>
+
+<script>
+/* ===== Per-project wallpaper feature ===== */
+const WALLPAPERS = [
+  {cat:'Scenery', items:[
+    {id:'s1', url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800'},
+    {id:'s2', url:'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800'},
+    {id:'s3', url:'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800'},
+    {id:'s4', url:'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800'},
+    {id:'s5', url:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800'},
+    {id:'s6', url:'https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=800'},
+  ]},
+  {cat:'Colourful', items:[
+    {id:'c1', url:'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800'},
+    {id:'c2', url:'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800'},
+    {id:'c3', url:'https://images.unsplash.com/photo-1614851099175-e5b30eb6f696?w=800'},
+    {id:'c4', url:'https://images.unsplash.com/photo-1550859492-d5da9d8e45f3?w=800'},
+    {id:'c5', url:'https://images.unsplash.com/photo-1604079628040-94301bb21b91?w=800'},
+    {id:'c6', url:'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800'},
+  ]},
+  {cat:'Light', items:[
+    {id:'l1', url:'https://images.unsplash.com/photo-1557683316-973673baf926?w=800'},
+    {id:'l2', url:'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800'},
+    {id:'l3', url:'https://images.unsplash.com/photo-1557683304-673a23048d34?w=800'},
+    {id:'l4', url:'https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=800'},
+  ]},
+  {cat:'Dark', items:[
+    {id:'d1', url:'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800'},
+    {id:'d2', url:'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=800'},
+    {id:'d3', url:'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=800'},
+    {id:'d4', url:'https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=800'},
+  ]},
+  {cat:'City', items:[
+    {id:'ct1', url:'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800'},
+    {id:'ct2', url:'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800'},
+    {id:'ct3', url:'https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=800'},
+    {id:'ct4', url:'https://images.unsplash.com/photo-1496588152823-86ff7695e68f?w=800'},
+  ]},
+  {cat:'Cartoon / Anime', items:[
+    {id:'cn1', url:'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'},
+    {id:'cn2', url:'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800'},
+    {id:'cn3', url:'https://images.unsplash.com/photo-1499346030926-9a72daac6c63?w=800'},
+    {id:'cn4', url:'https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?w=800'},
+    {id:'cn5', url:'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=800'},
+    {id:'cn6', url:'https://images.unsplash.com/photo-1493612276216-ee3925520721?w=800'},
+    {id:'cn7', url:'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800'},
+    {id:'cn8', url:'https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=800'},
+    {id:'cn9', url:'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=800'},
+    {id:'cn10', url:'https://images.unsplash.com/photo-1559336197-ded8aaa244bc?w=800'},
+    {id:'cn11', url:'https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=800'},
+    {id:'cn12', url:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800'},
+  ]},
+];
+
+function wpKey(){return currentProject?`prv_wallpaper_${currentProject.id}`:null;}
+function getCurWp(){const k=wpKey();if(!k)return null;try{return localStorage.getItem(k);}catch(e){return null;}}
+function setWallpaper(url){
+  const k=wpKey();if(!k){alert('Select a project first');return;}
+  try{
+    if(url){localStorage.setItem(k,url);}else{localStorage.removeItem(k);}
+  }catch(e){}
+  applyProjectWallpaper();
+  buildWpGrid();
+}
+function applyProjectWallpaper(){
+  const el=document.getElementById('wallpaperBg');if(!el)return;
+  const url=getCurWp();
+  if(url){el.style.backgroundImage=`url("${url}")`;el.classList.add('active');}
+  else{el.style.backgroundImage='';el.classList.remove('active');}
+}
+function buildWpGrid(){
+  const host=document.getElementById('wpGridHost');if(!host)return;
+  const cur=getCurWp();
+  let h='';
+  h+=`<div class="wp-grid"><div class="wp-thumb none${!cur?' sel':''}" onclick="setWallpaper('')">None</div></div>`;
+  WALLPAPERS.forEach(cat=>{
+    h+=`<div class="wp-cat">${cat.cat}</div><div class="wp-grid">`;
+    cat.items.forEach(it=>{
+      const sel=cur===it.url?' sel':'';
+      h+=`<div class="wp-thumb${sel}" style="background-image:url('${it.url}')" onclick="setWallpaper('${it.url}')"></div>`;
+    });
+    h+=`</div>`;
+  });
+  host.innerHTML=h;
+}
+function toggleWpPanel(){
+  if(!currentProject){alert('Select a project first');return;}
+  const p=document.getElementById('wpPanel');
+  if(p.classList.contains('open')){p.classList.remove('open');}
+  else{buildWpGrid();p.classList.add('open');}
+}
+document.addEventListener('click',function(e){
+  const p=document.getElementById('wpPanel');if(!p||!p.classList.contains('open'))return;
+  if(p.contains(e.target)||e.target.closest('.wp-btn'))return;
+  p.classList.remove('open');
+});
+
+/* Hook into project switch: monkey-patch updateProjUI */
+(function(){
+  if(typeof updateProjUI!=='function')return;
+  const _orig=updateProjUI;
+  updateProjUI=function(){_orig.apply(this,arguments);applyProjectWallpaper();};
+})();
+/* Apply once on load in case a project is already selected */
+setTimeout(applyProjectWallpaper,100);
 </script>
 </body>
 </html>
