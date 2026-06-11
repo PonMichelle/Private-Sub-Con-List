@@ -102,6 +102,27 @@ a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .cperson{font-size:11.5px;color:var(--tx2);margin-bottom:8px;min-height:16px}
 .gradechip{display:inline-block;font-size:10.5px;font-weight:600;color:#8a5c00;background:linear-gradient(135deg,#fef3db,#fff8ec);border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;margin-bottom:6px;line-height:1.4;word-break:break-word;cursor:pointer}
 .gradechip:hover{background:linear-gradient(135deg,#fde9b8,#fff3db)}
+.selcb{accent-color:var(--blue);width:15px;height:15px;cursor:pointer;flex-shrink:0;margin-right:7px}
+.card.selem{outline:2px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 4px var(--bblue)}
+tr.selrow-em td{background:var(--bblue)!important}
+.emailbar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--tx);color:#fff;padding:10px 14px;border-radius:30px;box-shadow:0 6px 24px rgba(0,0,0,.28);z-index:400;display:none;align-items:center;gap:12px;font-size:13px}
+.emailbar #emailbarTxt{font-weight:600}
+.emailbar .btn{padding:6px 12px;font-size:12px}
+.batchov{position:fixed;inset:0;background:rgba(40,38,34,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.batchov.open{display:flex}
+.batchbox{background:var(--sur);border-radius:var(--rl);width:100%;max-width:460px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.batchhd{display:flex;justify-content:space-between;align-items:center;padding:16px 18px 4px;font-size:16px;font-weight:700}
+.batchx{cursor:pointer;color:var(--tx3);font-size:15px}.batchx:hover{color:var(--red)}
+.batchsub{padding:0 18px 12px;font-size:12px;color:var(--tx3);border-bottom:1px solid var(--bdr)}
+#batchList{overflow-y:auto;padding:6px 0;flex:1}
+.batchrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 18px;border-bottom:1px solid var(--bdr)}
+.batchrow .bname{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-open{background:var(--blue);color:#fff;border-color:var(--blue);flex-shrink:0;padding:5px 12px;font-size:12px}
+.btn-open:hover{background:#0d3f82}
+.batchrow.bdone{opacity:.5}
+.batchrow.bdone .btn-open{background:var(--green);border-color:var(--green)}
+.batchrow.bdone .btn-open::after{content:' ✓'}
+.batchft{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--bdr)}
 .gradepop{position:fixed;z-index:1000;display:none;background:#fff;border:1px solid var(--bdr2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.22);padding:10px 0;width:360px;max-height:calc(100vh - 30px);overflow-y:auto}
 .gp-title{font-size:10.5px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:2px 14px 8px;border-bottom:1px solid var(--bdr);margin-bottom:4px}
 .gp-row{display:flex;align-items:baseline;gap:8px;padding:5px 14px;font-size:12px}
@@ -315,6 +336,7 @@ body:has(#wallpaperBg.active){background:transparent}
     <button class="btn btn-blue" onclick="saveRec()">Save to Team</button>
   </div>
 </div></div>
+<div class="emailbar" id="emailbar"><span id="emailbarTxt">0 selected</span><button class="btn btn-blue" onclick="emailSelectedSend(event)">✉ Send email (separate)</button><button class="btn" onclick="clearEmailSel()" style="background:#444;color:#fff;border-color:#555">Clear</button></div>
 <div class="toast" id="toast"></div>
 <div class="epicker" id="epicker">
   <div class="epicker-title">Open email with</div>
@@ -876,9 +898,10 @@ function render(){
       const eH=em.map(e=>`<a href="#" class="demail" onclick="openEmail('${allEmails.replace(/'/g,"\\'")}',event)" title="Click to email all contacts at ${r.company}">${e}</a>`).join('<br>');
       const nt=st.note||'';
       // Card highlight priority: Not Quote = red > Quote received = amber > Invited = blue
-      const cardCls=noq?' nq':qrc?' qrcv':inv?' inv':'';
+      const cardCls=(noq?' nq':qrc?' qrcv':inv?' inv':'')+(emailSel.has(r.id)?' selem':'');
       return`<div class="card${cardCls}">
         <div class="cth">
+          <input type="checkbox" class="selcb" ${emailSel.has(r.id)?'checked':''} onclick="toggleEmailSel(${r.id},this)" title="Select to email" />
           <div class="ctag">${r.trade}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
             ${noq?`<span class="nqbadge">✕ No quote</span>`:''}
@@ -954,7 +977,7 @@ function render(){
         return (prevOk&&!noq) ? cbTd(ads[n-1],`add${n}Date`,'#6c4fc7',st[`add${n}Date`]||'') : dash;
       }).join('');
       return`<tr style="${rowBg}">
-        <td style="${namColor}">${r.company}${noq?` <span style="font-size:10px;background:#fdeaea;color:#a02020;border:1px solid #f5a5a5;border-radius:6px;padding:1px 6px;vertical-align:middle;font-weight:400">✕ No quote</span>`:''}</td>
+        <td style="${namColor}"><input type="checkbox" class="selcb" ${emailSel.has(r.id)?'checked':''} onclick="toggleEmailSel(${r.id},this)" title="Select to email" style="vertical-align:middle;margin-right:7px" />${r.company}${noq?` <span style="font-size:10px;background:#fdeaea;color:#a02020;border:1px solid #f5a5a5;border-radius:6px;padding:1px 6px;vertical-align:middle;font-weight:400">✕ No quote</span>`:''}</td>
         <td style="font-size:11px;color:var(--tx2)">${r.trade}</td>
         <td>${r.contact||'—'}</td>
         <td style="white-space:nowrap;font-size:11px">${ph||'—'}</td>
@@ -1053,11 +1076,16 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 
 // ── Email client picker ──────────────────────────────────────────
 let _epEmail='';
+let _epBatchItems=null; // [{company,emails}] when batch-sending
 function openEmail(emails,event){
   event.preventDefault();event.stopPropagation();
+  _epBatchItems=null;
   const def=localStorage.getItem('prv_email_client');
   if(def&&def!=='ask'){openWithClient(emails,def);return;}
   _epEmail=emails;
+  showPicker(event);
+}
+function showPicker(event){
   const p=document.getElementById('epicker');
   document.getElementById('epdefchk').checked=false;
   const x=Math.min(event.clientX,window.innerWidth-225);
@@ -1067,16 +1095,81 @@ function openEmail(emails,event){
 }
 function pickClient(client){
   if(document.getElementById('epdefchk').checked){localStorage.setItem('prv_email_client',client);updateEmailLabel();}
-  openWithClient(_epEmail,client);
+  if(_epBatchItems){showBatchModal(_epBatchItems,client);_epBatchItems=null;}
+  else openWithClient(_epEmail,client);
   closeEPicker();
 }
-function openWithClient(emails,client){
+function emailUrl(emails,client){
   const sub='Enquiry - HDB Subcontractor';
   const to=encodeURIComponent(emails);
-  if(client==='gmail')window.open(`https://mail.google.com/mail/?view=cm&to=${to}&su=${encodeURIComponent(sub)}`,'_blank');
-  else if(client==='yahoo')window.open(`https://compose.mail.yahoo.com/?to=${to}&subject=${encodeURIComponent(sub)}`,'_blank');
-  else if(client==='hotmail')window.open(`https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${encodeURIComponent(sub)}`,'_blank');
-  else location.href=`mailto:${emails}`;
+  if(client==='gmail')return `https://mail.google.com/mail/?view=cm&to=${to}&su=${encodeURIComponent(sub)}`;
+  if(client==='yahoo')return `https://compose.mail.yahoo.com/?to=${to}&subject=${encodeURIComponent(sub)}`;
+  if(client==='hotmail')return `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${encodeURIComponent(sub)}`;
+  return `mailto:${emails}?subject=${encodeURIComponent(sub)}`;
+}
+function openWithClient(emails,client){
+  if(client==='system'){location.href=emailUrl(emails,client);return;}
+  window.open(emailUrl(emails,client),'_blank');
+}
+// Batch: show a list where each company has its own Open button.
+let _batchItems=[],_batchClient='system';
+function showBatchModal(items,client){
+  _batchItems=items;_batchClient=client;
+  let ov=document.getElementById('batchOv');
+  if(!ov){
+    ov=document.createElement('div');ov.id='batchOv';ov.className='batchov';
+    ov.innerHTML='<div class="batchbox"><div class="batchhd"><span id="batchTitle"></span><span class="batchx" onclick="closeBatch()">✕</span></div><div class="batchsub" id="batchSub"></div><div id="batchList"></div><div class="batchft"><button class="btn" id="openAllBtn" onclick="openAllBatch()">⚡ Open all</button><button class="btn btn-blue" onclick="closeBatch()">Done</button></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('mousedown',e=>{if(e.target===ov)closeBatch();});
+  }
+  const cl={gmail:'Gmail',yahoo:'Yahoo Mail',hotmail:'Outlook',system:'your mail app'}[client]||client;
+  document.getElementById('batchTitle').textContent=`Send ${items.length} email${items.length>1?'s':''}`;
+  document.getElementById('batchSub').textContent=(client==='system')?`Click each ✉ Open below — ${cl} opens one compose window per click. (One-click "Open all" isn't possible with a desktop mail app.)`:`Click each ✉ Open, or use "Open all" to open all in ${cl}.`;
+  const oab=document.getElementById('openAllBtn');if(oab)oab.style.display=(client==='system')?'none':'';
+  document.getElementById('batchList').innerHTML=items.map((it,i)=>`<div class="batchrow" id="brow${i}"><span class="bname" title="${(it.emails||'').replace(/"/g,'&quot;')}">${it.company}</span><button class="btn btn-open" onclick="openOneBatch(${i})">✉ Open</button></div>`).join('');
+  ov.classList.add('open');
+}
+function openOneBatch(i){
+  const it=_batchItems[i];if(!it)return;
+  if(_batchClient==='system'){const a=document.createElement('a');a.href=emailUrl(it.emails,'system');document.body.appendChild(a);a.click();a.remove();}
+  else window.open(emailUrl(it.emails,_batchClient),'_blank');
+  const row=document.getElementById('brow'+i);if(row)row.classList.add('bdone');
+}
+function openAllBatch(){
+  if(_batchClient==='system'){ // desktop app: can't batch — stagger as best-effort
+    _batchItems.forEach((it,i)=>setTimeout(()=>openOneBatch(i), i*900));
+    return;
+  }
+  // Webmail: open every tab synchronously within this click so the browser
+  // treats them as one user action (allow pop-ups once and they all open together).
+  _batchItems.forEach((it,i)=>openOneBatch(i));
+  toast(`Opening ${_batchItems.length} tabs — click "Always allow pop-ups" if blocked`);
+}
+function closeBatch(){const ov=document.getElementById('batchOv');if(ov)ov.classList.remove('open');}
+let emailSel=new Set();
+function toggleEmailSel(id,cb){
+  if(cb.checked)emailSel.add(id);else emailSel.delete(id);
+  const card=cb.closest('.card');if(card)card.classList.toggle('selem',cb.checked);
+  const row=cb.closest('tr');if(row)row.classList.toggle('selrow-em',cb.checked);
+  updateEmailBar();
+}
+function updateEmailBar(){
+  const bar=document.getElementById('emailbar');if(!bar)return;
+  const n=emailSel.size;
+  document.getElementById('emailbarTxt').textContent=n+' selected';
+  bar.style.display=n>0?'flex':'none';
+}
+function clearEmailSel(){emailSel.clear();render();updateEmailBar();}
+function emailSelectedSend(event){
+  event.preventDefault();event.stopPropagation();
+  if(!emailSel.size){toast('Tick some subcontractors first');return;}
+  const items=[];
+  emailSel.forEach(id=>{const r=records.find(x=>x.id===id);if(!r)return;const ems=(r.email||'').split(/[;,]/).map(e=>e.trim()).filter(Boolean);if(ems.length)items.push({company:r.company,emails:ems.join(',')});});
+  if(!items.length){toast('Selected subcontractors have no email on file');return;}
+  const def=localStorage.getItem('prv_email_client');
+  if(def&&def!=='ask'){showBatchModal(items,def);return;}
+  _epBatchItems=items;
+  showPicker(event);
 }
 function closeEPicker(){document.getElementById('epicker').classList.remove('open');}
 function resetEmailDefault(){localStorage.removeItem('prv_email_client');updateEmailLabel();toast('Email default cleared - choose next time');}
