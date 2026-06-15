@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>SubconHub · Private</title>
+<title>Subcon Hub · Private</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root{--bg:#f4f2ee;--sur:#fff;--sur2:#f9f8f5;--bdr:#e2dfd8;--bdr2:#ccc9c0;--tx:#1a1916;--tx2:#5a5850;--tx3:#9a9488;--blue:#1a56a0;--bblue:#e8f0fb;--lblue:#ddeeff;--green:#1a7a4a;--bgreen:#e6f5ed;--amber:#8a5c00;--bamber:#fef3db;--red:#a02020;--r:6px;--rl:10px}
@@ -39,20 +39,46 @@ a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .setmascot{margin-top:6px;font-size:10px;color:var(--tx3);cursor:pointer;display:inline-block;opacity:.7}
 .setmascot:hover{opacity:1;color:var(--blue);text-decoration:underline}
 /* Animated cartoon buddy in the header corner (walk / read / music) */
-.buddy{position:absolute;top:2px;right:8px;z-index:6;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+.buddy{position:absolute;top:1px;right:6px;z-index:6;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
 .b-bob{animation:bBob 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
 @keyframes bBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
-.b-legL{transform-box:fill-box;transform-origin:top center;animation:bLegL 18s ease-in-out infinite}
-.b-legR{transform-box:fill-box;transform-origin:top center;animation:bLegR 18s ease-in-out infinite}
-@keyframes bLegL{0%{transform:rotate(14deg)}6%{transform:rotate(-14deg)}12%{transform:rotate(14deg)}18%{transform:rotate(-14deg)}24%{transform:rotate(10deg)}30%,100%{transform:rotate(0)}}
-@keyframes bLegR{0%{transform:rotate(-14deg)}6%{transform:rotate(14deg)}12%{transform:rotate(-14deg)}18%{transform:rotate(14deg)}24%{transform:rotate(-10deg)}30%,100%{transform:rotate(0)}}
-.b-book{opacity:0;animation:bShowBook 18s ease-in-out infinite}
-@keyframes bShowBook{0%,33%{opacity:0}37%,63%{opacity:1}67%,100%{opacity:0}}
-.b-music{opacity:0;animation:bShowMusic 18s ease-in-out infinite}
-@keyframes bShowMusic{0%,66%{opacity:0}70%,96%{opacity:1}100%{opacity:0}}
+.b-legL{transform-box:fill-box;transform-origin:top center;animation:bLegL 25s ease-in-out infinite}
+.b-legR{transform-box:fill-box;transform-origin:top center;animation:bLegR 25s ease-in-out infinite}
+@keyframes bLegL{0%{transform:rotate(14deg)}4%{transform:rotate(-14deg)}8%{transform:rotate(14deg)}12%{transform:rotate(-14deg)}16%{transform:rotate(10deg)}20%,100%{transform:rotate(0)}}
+@keyframes bLegR{0%{transform:rotate(-14deg)}4%{transform:rotate(14deg)}8%{transform:rotate(-14deg)}12%{transform:rotate(14deg)}16%{transform:rotate(-10deg)}20%,100%{transform:rotate(0)}}
+.b-book{opacity:0;animation:bShowBook 25s ease-in-out infinite}
+@keyframes bShowBook{0%,20%{opacity:0}23%,38%{opacity:1}40%,100%{opacity:0}}
+.b-music{opacity:0;animation:bShowMusic 25s ease-in-out infinite}
+@keyframes bShowMusic{0%,40%{opacity:0}43%,58%{opacity:1}60%,100%{opacity:0}}
+.b-phone{opacity:0;animation:bShowPhone 25s ease-in-out infinite}
+@keyframes bShowPhone{0%,60%{opacity:0}63%,78%{opacity:1}80%,100%{opacity:0}}
+.b-selfie{opacity:0;animation:bShowSelfie 25s ease-in-out infinite}
+@keyframes bShowSelfie{0%,80%{opacity:0}83%,98%{opacity:1}100%{opacity:0}}
 .b-note{animation:bNote 1.5s ease-in infinite;transform-box:fill-box}
 .b-note.n2{animation-delay:.75s}
 @keyframes bNote{0%{opacity:0;transform:translateY(4px)}35%{opacity:1}100%{opacity:0;transform:translateY(-11px)}}
+.b-wave{animation:bWave 1.2s ease-out infinite;transform-box:fill-box;transform-origin:left center}
+.b-wave.w2{animation-delay:.45s}
+@keyframes bWave{0%{opacity:0;transform:scale(.5)}40%{opacity:.9}100%{opacity:0;transform:scale(1.3)}}
+.b-flash{animation:bFlash 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes bFlash{0%,55%{opacity:0;transform:scale(.6)}68%{opacity:1;transform:scale(1.25)}82%,100%{opacity:0;transform:scale(.6)}}
+/* Creative Subcon Hub brand lockup */
+.brand{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.brand-icon{flex-shrink:0;overflow:visible}
+.brand-icon line{stroke:#f5a300;stroke-width:1.5;stroke-linecap:round}
+.brand-icon .orbit-ring{fill:none;stroke:#c9c2b5;stroke-width:.7;stroke-dasharray:2 2;opacity:.5}
+.brand-icon .sun-core{fill:url(#hubg)}
+.brand-icon .earth{fill:#2b7fff}
+.rays{transform-box:view-box;transform-origin:16px 16px;animation:spin360 26s linear infinite}
+.orbit{transform-box:view-box;transform-origin:16px 16px;animation:spin360 6s linear infinite}
+.orbit.o1{animation-duration:6s}.orbit.o2{animation-duration:10s}.orbit.o3{animation-duration:15s}
+.brand-icon .moon-core{fill:url(#moong)}
+@keyframes spin360{to{transform:rotate(360deg)}}
+.brand-word{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:16px;letter-spacing:.02em;display:inline-flex;align-items:center;gap:4px;line-height:1}
+.bk-sub{background:linear-gradient(115deg,#1a1a1a,#8a6a00,#ffd86b,#fff3c0,#ffd86b,#8a6a00,#1a1a1a);background-size:260% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:subShimmer 8s linear infinite}
+@keyframes subShimmer{0%{background-position:0% center}100%{background-position:260% center}}
+.bk-hub{background:linear-gradient(120deg,#1a56a0,#7c3aed);color:#fff;border-radius:6px;padding:1px 7px;box-shadow:0 1px 4px rgba(67,97,238,.35)}
+.brand-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin:-1px 0 5px 33px}
 .proj{font-size:13px;font-weight:600;color:var(--tx);line-height:1.3}
 .syncrow{display:flex;align-items:center;gap:5px;margin-top:5px}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
@@ -310,7 +336,21 @@ body:has(#wallpaperBg.active){background:transparent}
   <div class="sidebar">
     <div class="sh">
       <span class="spark s1">✦</span><span class="spark s2">✧</span><span class="spark s3">⋆</span><span class="spark s4">✦</span><span class="spark s5">✧</span><span class="spark s6">⋆</span>
-      <div class="logo">SubconHub · Private</div>
+      <div class="brand">
+        <svg class="brand-icon" viewBox="0 0 32 32" width="26" height="26" xmlns="http://www.w3.org/2000/svg">
+          <defs><radialGradient id="moong"><stop offset="0" stop-color="#fdfdfd"/><stop offset="1" stop-color="#c4c9d4"/></radialGradient></defs>
+          <circle cx="16" cy="16" r="7" class="orbit-ring"/>
+          <circle cx="16" cy="16" r="10.5" class="orbit-ring"/>
+          <circle cx="16" cy="16" r="13.5" class="orbit-ring"/>
+          <circle cx="16" cy="16" r="4.2" class="moon-core"/>
+          <circle cx="14.6" cy="14.9" r=".9" fill="#b3b8c4"/><circle cx="17.3" cy="16.5" r=".7" fill="#b3b8c4"/><circle cx="15.6" cy="17.6" r=".5" fill="#b3b8c4"/>
+          <g class="orbit o1"><circle cx="16" cy="9" r="1.7" fill="#2b7fff"/><circle cx="15.4" cy="8.6" r=".6" fill="#aee0ff"/></g>
+          <g class="orbit o2"><circle cx="16" cy="5.5" r="2" fill="#e0703a"/></g>
+          <g class="orbit o3"><circle cx="16" cy="2.5" r="1.4" fill="#7fcf9a"/></g>
+        </svg>
+        <span class="brand-word"><span class="bk-sub">SUBCON</span><span class="bk-hub">HUB</span></span>
+      </div>
+      <div class="brand-tag">Subcontractor Directory · Private</div>
       <div class="proj" id="projTitle" style="font-size:12px;font-weight:600;color:var(--tx);line-height:1.3;margin-bottom:4px">—</div>
       <button class="cur-proj" onclick="showProjScreen()" title="Switch project">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
@@ -550,8 +590,7 @@ async function selectProject(id){
   try{localStorage.setItem('prv_last_project',id);}catch(e){}
   hideProjScreen();
   updateProjUI();
-  await loadStatusForProject();
-  renderSB();render();
+  await loadAll(); // reloads status, per-project templates, and clears selection for the new project
 }
 
 async function deleteProject(id){
@@ -692,8 +731,7 @@ async function selectProject(id){
   try{localStorage.setItem('prv_last_project',id);}catch(e){}
   hideProjScreen();
   updateProjUI();
-  await loadStatusForProject();
-  renderSB();render();
+  await loadAll(); // reloads status, per-project templates, and clears selection for the new project
 }
 
 async function deleteProject(id){
@@ -727,7 +765,7 @@ async function loadStatusForProject(){
     statusMap=r?r:{};
     // Always start from BD (embedded data) to ensure latest subcon list
     // JSONBin only stores user-added contacts on top of BD
-    const rr=await sget(SK_R);
+    const rr=await sget(SK_R); // shared subcontractor list across all projects
     const additions=rr?rr.filter(r=>r.id>BD.length):[];
     records=[...JSON.parse(JSON.stringify(BD)),...additions];
     nextId=records.length?Math.max(...records.map(r=>r.id))+1:1;
@@ -744,7 +782,9 @@ async function loadAll(){
   loadBcaCache();
   buildBakedIndex();
   applyTradeRenames();
+  try{loadEmailSel();}catch(e){} // restore THIS project's own ticks (kept per-project, not shared)
   renderSB();render();
+  try{updateEmailBar();}catch(e){}
   loadTradeRenames(); // shared trade renames (Firebase)
   refreshBcaGrades(); // auto-update grades from BCA in background (7-day cache)
   loadTplsFromCloud(); // shared email templates (Firebase)
@@ -980,7 +1020,7 @@ function render(){
       const ph=r.tel||r.hp;
       const em=(r.email||'').split(/[;,]/).map(e=>e.trim()).filter(Boolean);
       const allEmails=em.join(',');
-      const eH=em.map(e=>`<a href="#" class="demail" onclick="openEmail('${allEmails.replace(/'/g,"\\'")}',event)" title="Click to email all contacts at ${r.company}">${e}</a>`).join('<br>');
+      const eH=em.map(e=>`<a href="#" class="demail" onclick="openEmail(${r.id},event)" title="Click to email ${r.company}">${e}</a>`).join('<br>');
       const nt=st.note||'';
       // Card highlight priority: Not Quote = red > Quote received = amber > Invited = blue
       const cardCls=(noq?' nq':qrc?' qrcv':inv?' inv':'')+(emailSel.has(r.id)?' selem':'');
@@ -1045,7 +1085,7 @@ function render(){
       const ads=[1,2,3,4,5,6,7,8,9,10].map(n=>!!st[`add${n}Date`]);
       const emList=(r.email||'').split(/[;,]/).map(e=>e.trim()).filter(Boolean);
       const allEmails=emList.join(',');
-      const em=emList.map(e=>`<a href="#" class="tde" onclick="openEmail('${allEmails.replace(/'/g,"\\'")}',event)" title="Click to email all contacts at ${r.company}">${e}</a>`).join('<br>');
+      const em=emList.map(e=>`<a href="#" class="tde" onclick="openEmail(${r.id},event)" title="Click to email ${r.company}">${e}</a>`).join('<br>');
       const ph=[r.tel,r.hp].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' / ');
       const rowBg=noq?'background:#fff5f5':qrc?'background:#fffbf0':inv?'background:#f0f6ff':'';
       const namColor=noq?'color:#a02020;font-weight:600':qrc?'color:#7a4f00;font-weight:600':inv?'color:#0c447c;font-weight:500':'font-weight:500';
@@ -1213,12 +1253,15 @@ async function loadMascot(){
 // ── Email client picker ──────────────────────────────────────────
 let _epEmail='';
 let _epBatchItems=null; // [{company,emails}] when batch-sending
-function openEmail(emails,event){
+function openEmail(idOrEmails,event){
   event.preventDefault();event.stopPropagation();
-  _epBatchItems=null;
+  let item;
+  const r=(typeof idOrEmails==='number')?records.find(x=>x.id===idOrEmails):null;
+  if(r){const ems=(r.email||'').split(/[;,]/).map(e=>e.trim()).filter(Boolean);if(!ems.length){toast('No email on file');return;}item={company:r.company,contact:r.contact||'',trade:r.trade||'',emails:ems.join(',')};}
+  else{const ems=(''+idOrEmails).split(/[;,]/).map(e=>e.trim()).filter(Boolean);if(!ems.length)return;item={company:'',contact:'',trade:'',emails:ems.join(',')};}
   const def=localStorage.getItem('prv_email_client');
-  if(def&&def!=='ask'){openWithClient(emails,def);return;}
-  _epEmail=emails;
+  if(def&&def!=='ask'){showBatchModal([item],def);return;}
+  _epBatchItems=[item];
   showPicker(event);
 }
 function showPicker(event){
@@ -1244,8 +1287,9 @@ function emailUrl(emails,client,subject,body){
   if(client==='hotmail')return `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${sub}${bd?'&body='+bd:''}`;
   return `mailto:${emails}?subject=${sub}${bd?'&body='+bd:''}`;
 }
-// ── Email templates (multiple, used for batch sending) ──────────
-const TPLS_KEY='prv_email_tpls';
+// ── Email templates (multiple, PER-PROJECT, used for batch sending) ──
+function tplsLocalKey(){return currentProject?'prv_email_tpls_'+currentProject.id:'prv_email_tpls';}
+function tplsCloudKey(){return currentProject?'prv_email_templates_'+currentProject.id:'prv_email_templates';}
 const DEFAULT_TPLS=[
   {name:'Invitation to Quote',subject:'Invitation to Quote - {trade} - {project}',body:'Dear {contact},\n\nWe would like to invite {company} to submit a quotation for the {trade} works on our project, {project}.\n\nPlease find the relevant tender documents attached for your review. We would appreciate it if you could furnish us with your most competitive price by {date}.\n\nShould you require any clarification, please do not hesitate to contact us. We look forward to receiving your quotation and thank you in advance for your participation.\n\nThank you and best regards,\n\n{name}\nWee Hur Construction Pte Ltd'},
   {name:'Quotation Reminder',subject:'Reminder: Quotation for {trade} - {project}',body:'Dear {contact},\n\nWe refer to our earlier invitation for the {trade} works on {project}.\n\nThis is a gentle reminder that your quotation is due by {date}. Kindly let us know if you require any further information or additional time.\n\nWe look forward to receiving your submission.\n\nThank you and best regards,\n\n{name}\nWee Hur Construction Pte Ltd'},
@@ -1254,14 +1298,12 @@ const DEFAULT_TPLS=[
 ];
 let _tpls=[],_tplIdx=0;
 function getTpls(){
-  try{const a=JSON.parse(localStorage.getItem(TPLS_KEY));if(Array.isArray(a)&&a.length)return a;}catch(e){}
-  try{const old=JSON.parse(localStorage.getItem('prv_email_tpl2'));if(old&&old.subject!==undefined)return [{name:'My Template',subject:old.subject,body:old.body}].concat(DEFAULT_TPLS.slice(1));}catch(e){}
+  try{const a=JSON.parse(localStorage.getItem(tplsLocalKey()));if(Array.isArray(a)&&a.length)return a;}catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_TPLS));
 }
-const TPLS_CLOUD='prv_email_templates'; // shared across the team (Firebase, private set)
 function saveTpls(){
-  try{localStorage.setItem(TPLS_KEY,JSON.stringify(_tpls));}catch(e){}
-  try{if(typeof sset==='function')sset(TPLS_CLOUD,_tpls);}catch(e){}
+  try{localStorage.setItem(tplsLocalKey(),JSON.stringify(_tpls));}catch(e){}
+  try{if(typeof sset==='function')sset(tplsCloudKey(),_tpls);}catch(e){}
 }
 function refreshTplUI(reloadFields){
   const sel=document.getElementById('tplSel');if(!sel)return;
@@ -1270,21 +1312,23 @@ function refreshTplUI(reloadFields){
   if(reloadFields)loadTplInto();
 }
 async function loadTplsFromCloud(){
+  const ckey=tplsCloudKey(), lkey=tplsLocalKey();
   try{
     if(typeof sget!=='function')return;
-    const cloud=await sget(TPLS_CLOUD);
+    let cloud=await sget(ckey);
+    if((!cloud||!cloud.length)){ try{const legacy=await sget('prv_email_templates'); if(Array.isArray(legacy)&&legacy.length) cloud=legacy;}catch(e){} } // seed new per-project set from your previous templates
     const local=getTpls();
     // MERGE by name — never drop a template; also ensure built-in templates are always present
     let merged=Array.isArray(cloud)?cloud.slice():[];
     const have=new Set(merged.map(t=>((t&&t.name)||'').toLowerCase()));
     [].concat(local,DEFAULT_TPLS).forEach(t=>{const nm=((t&&t.name)||'').toLowerCase();if(nm&&!have.has(nm)){merged.push(t);have.add(nm);}});
     _tpls=merged;
-    try{localStorage.setItem(TPLS_KEY,JSON.stringify(merged));}catch(e){}
-    if(typeof sset==='function')sset(TPLS_CLOUD,merged);
+    try{localStorage.setItem(lkey,JSON.stringify(merged));}catch(e){}
+    if(typeof sset==='function')sset(ckey,merged);
     const box=document.getElementById('tplBox');
     refreshTplUI(!box||box.style.display==='none');
   }catch(e){}
-  try{if(typeof listenKey==='function')listenKey(TPLS_CLOUD,val=>{if(Array.isArray(val)&&val.length){_tpls=val;try{localStorage.setItem(TPLS_KEY,JSON.stringify(val));}catch(e){}const box=document.getElementById('tplBox');refreshTplUI(!box||box.style.display==='none');}});}catch(e){}
+  try{if(typeof listenKey==='function')listenKey(ckey,val=>{if(ckey!==tplsCloudKey())return;if(Array.isArray(val)&&val.length){_tpls=val;try{localStorage.setItem(lkey,JSON.stringify(val));}catch(e){}const box=document.getElementById('tplBox');refreshTplUI(!box||box.style.display==='none');}});}catch(e){}
 }
 function tplOptions(){return _tpls.map((t,i)=>`<option value="${i}"${i===_tplIdx?' selected':''}>${(t.name||'Template '+(i+1)).replace(/</g,'&lt;').replace(/"/g,'&quot;')}</option>`).join('');}
 function loadTplInto(){const t=_tpls[_tplIdx]||{subject:'',body:''};const s=document.getElementById('tplSubj'),b=document.getElementById('tplBody');if(s)s.value=t.subject||'';if(b)b.value=t.body||'';}
@@ -1367,11 +1411,14 @@ function openAllBatch(){
 }
 function closeBatch(){const ov=document.getElementById('batchOv');if(ov)ov.classList.remove('open');}
 let emailSel=new Set();
+function emailSelKey(){return 'prv_emailsel_'+(currentProject?currentProject.id:'none');}
+function saveEmailSel(){try{localStorage.setItem(emailSelKey(),JSON.stringify([...emailSel]));}catch(e){}}
+function loadEmailSel(){emailSel=new Set();try{const a=JSON.parse(localStorage.getItem(emailSelKey()));if(Array.isArray(a))emailSel=new Set(a);}catch(e){}}
 function toggleEmailSel(id,cb){
   if(cb.checked)emailSel.add(id);else emailSel.delete(id);
   const card=cb.closest('.card');if(card)card.classList.toggle('selem',cb.checked);
   const row=cb.closest('tr');if(row)row.classList.toggle('selrow-em',cb.checked);
-  updateEmailBar();
+  saveEmailSel();updateEmailBar();
 }
 function updateEmailBar(){
   const bar=document.getElementById('emailbar');if(!bar)return;
@@ -1379,7 +1426,7 @@ function updateEmailBar(){
   document.getElementById('emailbarTxt').textContent=n+' selected';
   bar.style.display=n>0?'flex':'none';
 }
-function clearEmailSel(){emailSel.clear();render();updateEmailBar();}
+function clearEmailSel(){emailSel.clear();saveEmailSel();render();updateEmailBar();}
 function emailSelectedSend(event){
   event.preventDefault();event.stopPropagation();
   if(!emailSel.size){toast('Tick some subcontractors first');return;}
