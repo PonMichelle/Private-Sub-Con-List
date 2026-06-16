@@ -1323,6 +1323,12 @@ function enforceProjectFirst(s){
   s=s.replace(/\{project\}/g,'').replace(/^[\s-]+/,'').replace(/[\s-]+$/,'').replace(/\s*-\s*-\s*/g,' - ').replace(/\s{2,}/g,' ').trim();
   return '{project} - '+s;
 }
+function updateTplLinks(){
+  const el=document.getElementById('tplLinks');if(!el)return;
+  const b=document.getElementById('tplBody');const txt=b?b.value:'';
+  const urls=(txt.match(/https?:\/\/[^\s)]+/g)||[]);
+  el.innerHTML=urls.length?('🔗 Link in email (click to test): '+urls.map(u=>`<a href="${u.replace(/"/g,'%22')}" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all">${u}</a>`).join('<br>')):'';
+}
 function refreshTplUI(reloadFields){
   const sel=document.getElementById('tplSel');if(!sel)return;
   if(_tplIdx>=_tpls.length)_tplIdx=0;
@@ -1350,7 +1356,7 @@ async function loadTplsFromCloud(){
   try{if(typeof listenKey==='function')listenKey(ckey,val=>{if(ckey!==tplsCloudKey())return;if(Array.isArray(val)&&val.length){_tpls=val;try{localStorage.setItem(lkey,JSON.stringify(val));}catch(e){}const box=document.getElementById('tplBox');refreshTplUI(!box||box.style.display==='none');}});}catch(e){}
 }
 function tplOptions(){return _tpls.map((t,i)=>`<option value="${i}"${i===_tplIdx?' selected':''}>${(t.name||'Template '+(i+1)).replace(/</g,'&lt;').replace(/"/g,'&quot;')}</option>`).join('');}
-function loadTplInto(){const t=_tpls[_tplIdx]||{subject:'',body:''};const s=document.getElementById('tplSubj'),b=document.getElementById('tplBody');if(s)s.value=t.subject||'';if(b)b.value=t.body||'';}
+function loadTplInto(){const t=_tpls[_tplIdx]||{subject:'',body:''};const s=document.getElementById('tplSubj'),b=document.getElementById('tplBody');if(s)s.value=t.subject||'';if(b)b.value=t.body||'';updateTplLinks();}
 function selectTpl(idx){_tplIdx=+idx;loadTplInto();}
 function saveTpl(){if(!_tpls[_tplIdx])return;_tpls[_tplIdx].subject=document.getElementById('tplSubj').value;_tpls[_tplIdx].body=document.getElementById('tplBody').value;saveTpls();}
 function newTpl(){const n=prompt('Name for the new template:','New template');if(!n)return;_tpls.push({name:n.trim(),subject:'',body:''});_tplIdx=_tpls.length-1;saveTpls();document.getElementById('tplSel').innerHTML=tplOptions();loadTplInto();toast('Template added — edit it below');}
@@ -1384,7 +1390,8 @@ function showBatchModal(items,client){
       +'<div id="tplBox" style="display:none;padding:0 18px 10px">'
       +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:7px"><select id="tplSel" onchange="selectTpl(this.value)" style="flex:1;padding:5px 8px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;font-family:inherit"></select><button class="btn" style="padding:5px 9px;font-size:11px" onclick="newTpl()">+ New</button><button class="btn" style="padding:5px 9px;font-size:11px" onclick="renameTpl()">Rename</button><button class="btn" style="padding:5px 9px;font-size:11px;color:var(--red)" onclick="delTpl()">Delete</button></div>'
       +'<input id="tplSubj" oninput="saveTpl()" placeholder="Subject" style="width:100%;padding:6px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;margin-bottom:6px;font-family:inherit" />'
-      +'<textarea id="tplBody" oninput="saveTpl()" rows="8" placeholder="Message body" style="width:100%;padding:7px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;font-family:inherit;resize:vertical"></textarea>'
+      +'<textarea id="tplBody" oninput="saveTpl();updateTplLinks()" rows="8" placeholder="Message body" style="width:100%;padding:7px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;font-family:inherit;resize:vertical"></textarea>'
+      +'<div id="tplLinks" style="font-size:10.5px;margin-top:5px;word-break:break-all"></div>'
       +'<div style="display:flex;align-items:center;gap:7px;margin-top:7px"><label style="font-size:11.5px;color:var(--tx2);font-weight:500;white-space:nowrap">Quote deadline {date}:</label><input id="tplDate" placeholder="e.g. 20 Jun 2026" style="flex:1;padding:5px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;font-family:inherit" /></div>'
       +'<div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Placeholders auto-fill per subcontractor: <b>{company}</b> <b>{contact}</b> <b>{trade}</b> <b>{project}</b> <b>{name}</b> <b>{date}</b>.</div>'
       +'</div>'
@@ -1398,7 +1405,7 @@ function showBatchModal(items,client){
   document.getElementById('batchTitle').textContent=`Send ${items.length} email${items.length>1?'s':''}`;
   document.getElementById('batchSub').textContent=(client==='system')?`Click each ✉ Open below — ${cl} opens one compose window per click. (One-click "Open all" isn't possible with a desktop mail app.)`:`Click each ✉ Open, or use "Open all" to open all in ${cl}.`;
   const oab=document.getElementById('openAllBtn');if(oab)oab.style.display=(client==='system')?'none':'';
-  document.getElementById('batchList').innerHTML=items.map((it,i)=>`<div class="batchrow" id="brow${i}"><span class="bname" title="${(it.emails||'').replace(/"/g,'&quot;')}">${it.company}</span><button class="btn btn-open" onclick="openOneBatch(${i})">✉ Open</button></div>`).join('');
+  document.getElementById('batchList').innerHTML=items.map((it,i)=>`<div class="batchrow" id="brow${i}"><span class="bname" title="${(it.emails||'').replace(/"/g,'&quot;')}">${it.company}</span><button class="btn" style="padding:5px 9px;font-size:12px" onclick="copyOneBatch(${i})" title="Copy this email to paste into your mail">📋</button><button class="btn btn-open" onclick="openOneBatch(${i})">✉ Open</button></div>`).join('');
   ov.classList.add('open');
 }
 function openOneBatch(i){
@@ -1412,6 +1419,14 @@ function openOneBatch(i){
   const row=document.getElementById('brow'+i);
   if(row){row.classList.toggle('bdone',ok);row.classList.toggle('bblocked',!ok);}
   return ok;
+}
+function copyOneBatch(i){
+  const it=_batchItems[i];if(!it)return;
+  const cur=_tpls[_tplIdx]||{subject:'',body:''};
+  const sEl=document.getElementById('tplSubj'),bEl=document.getElementById('tplBody');
+  const subj=fillTpl(sEl?sEl.value:cur.subject,it), body=fillTpl(bEl?bEl.value:cur.body,it);
+  copyText('To: '+it.emails+'\nSubject: '+subj+'\n\n'+body, 'Email copied — paste into your mail ✓');
+  const r=document.getElementById('brow'+i);if(r)r.classList.add('bdone');
 }
 function openAllBatch(){
   if(_batchClient==='system'){ // desktop app: can't batch — stagger as best-effort
