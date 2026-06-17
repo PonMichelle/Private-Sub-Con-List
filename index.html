@@ -371,6 +371,7 @@ body:has(#wallpaperBg.active){background:transparent}
       </div>
       <div class="tr">
         <span class="rc" id="rc"></span>
+        <button class="btn" id="selAllBtn" onclick="toggleSelectAllShown()" title="Tick / untick every subcontractor currently shown (the selected trade)">☑ Select all</button>
         <select id="sortSel" onchange="setSort(this.value)" title="Sort by" style="padding:5px 8px;font-size:11.5px;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--sur);color:var(--tx2);font-family:inherit;cursor:pointer">
           <option value="default">Sort: Default</option>
           <option value="phone-asc">Contact no. ↑</option>
@@ -399,7 +400,7 @@ body:has(#wallpaperBg.active){background:transparent}
     </div>
     <div class="cards-area" id="ca"><div class="cgrid" id="cg"></div></div>
     <div class="tw" id="ta" style="display:none">
-      <table><thead><tr><th>Company</th><th>Trade</th><th>Contact</th><th>Tel/HP</th><th>Email</th><th>Remark</th><th>Invitation</th><th>Not Quote</th><th>Add.1</th><th>Add.2</th><th>Add.3</th><th>Add.4</th><th>Add.5</th><th>Add.6</th><th>Add.7</th><th>Add.8</th><th>Add.9</th><th>Add.10</th><th>Quotation Rcvd</th><th>Notes</th><th>BCA Grade</th></tr></thead><tbody id="tb"></tbody></table>
+      <table><thead><tr><th><input type="checkbox" id="selAllTh" onclick="toggleSelectAllShown()" title="Select / deselect all shown" style="margin-right:6px;vertical-align:middle;cursor:pointer" />Company</th><th>Trade</th><th>Contact</th><th>Tel/HP</th><th>Email</th><th>Remark</th><th>Invitation</th><th>Not Quote</th><th>Add.1</th><th>Add.2</th><th>Add.3</th><th>Add.4</th><th>Add.5</th><th>Add.6</th><th>Add.7</th><th>Add.8</th><th>Add.9</th><th>Add.10</th><th>Quotation Rcvd</th><th>Notes</th><th>BCA Grade</th></tr></thead><tbody id="tb"></tbody></table>
     </div>
   </div>
 </div>
@@ -1041,6 +1042,7 @@ function render(){
   upProg();
   const list=getFilt();
   document.getElementById('rc').textContent=`${list.length} result${list.length!==1?'s':''}`;
+  try{updateSelAllBtn();}catch(e){}
   if(view==='grid'){
     if(!list.length){document.getElementById('cg').innerHTML=`<div class="empty"><div style="font-size:32px;margin-bottom:10px">🔍</div><div style="font-size:13px;color:var(--tx2)">No subcontractors found</div></div>`;return;}
     document.getElementById('cg').innerHTML=list.map(r=>{
@@ -1479,9 +1481,28 @@ function updateEmailBar(){
   const bar=document.getElementById('emailbar');if(!bar)return;
   const n=emailSel.size;
   document.getElementById('emailbarTxt').textContent=n+' selected';
+  try{updateSelAllBtn();}catch(e){}
   bar.style.display=n>0?'flex':'none';
 }
 function clearEmailSel(){emailSel.clear();saveEmailSel();render();updateEmailBar();}
+function shownIds(){return getFilt().map(r=>r.id);}
+function toggleSelectAllShown(){
+  const ids=shownIds();
+  if(!ids.length){toast('Nothing to select');return;}
+  const allSel=ids.every(id=>emailSel.has(id));
+  if(allSel){ids.forEach(id=>emailSel.delete(id));toast('Cleared '+ids.length+' selected');}
+  else{ids.forEach(id=>emailSel.add(id));toast('Selected '+ids.length+(activeTrade==='ALL'?' (all shown)':' in '+activeTrade));}
+  saveEmailSel();render();updateEmailBar();
+}
+function updateSelAllBtn(){
+  const ids=shownIds();
+  const allSel=ids.length&&ids.every(id=>emailSel.has(id));
+  const someSel=ids.some(id=>emailSel.has(id));
+  const b=document.getElementById('selAllBtn');
+  if(b)b.innerHTML=allSel?'☐ Deselect all':'☑ Select all';
+  const cb=document.getElementById('selAllTh');
+  if(cb){cb.checked=!!allSel;cb.indeterminate=!allSel&&someSel;}
+}
 function emailSelectedSend(event){
   event.preventDefault();event.stopPropagation();
   if(!emailSel.size){toast('Tick some subcontractors first');return;}
