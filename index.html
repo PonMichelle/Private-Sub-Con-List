@@ -147,6 +147,7 @@ a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .card.nfa{opacity:.92}
 .card.nfa .cname{color:#e91e8c!important;font-weight:800!important}
 td.nfa-name{color:#e91e8c!important;font-weight:800!important}
+.colchk{vertical-align:middle;margin-right:4px;cursor:pointer;accent-color:#1a56a0}
 .fc.acta{background:#8a5c00;color:#fff;border-color:#8a5c00}
 .fc.actb{background:#1a56a0;color:#fff;border-color:#1a56a0}
 .fc.actr{background:#a02020;color:#fff;border-color:#a02020}
@@ -420,6 +421,7 @@ body:has(#wallpaperBg.active){background:transparent}
         <button class="vb act" id="vbG" onclick="setView('grid')" title="Cards"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
         <button class="vb" id="vbT" onclick="setView('table')" title="Table"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></button>
         <div class="upill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input type="text" id="uname" placeholder="Your name" /></div>
+        <button class="btn" id="undoBtn" onclick="doUndo()" title="Undo the last status change (single or bulk)" style="opacity:.45" disabled>↶ Undo</button>
         <button class="btn" onclick="syncNow()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><polyline points="23,20 23,14 17,14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Sync</button>
         <button class="btn" onclick="exportCSV()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
         <button class="btn" id="emailDefBtn" onclick="resetEmailDefault()" title="Change default email app">📧 <span id="emailDefLabel">Email</span></button>
@@ -439,7 +441,7 @@ body:has(#wallpaperBg.active){background:transparent}
     </div>
     <div class="cards-area" id="ca"><div class="cgrid" id="cg"></div></div>
     <div class="tw" id="ta" style="display:none">
-      <table><thead><tr><th><input type="checkbox" id="selAllTh" onclick="toggleSelectAllShown()" title="Select / deselect all shown" style="margin-right:6px;vertical-align:middle;cursor:pointer" />Company</th><th>Trade</th><th>Contact</th><th>Tel/HP</th><th>Email</th><th>Remark</th><th>Invitation</th><th>Not Quote</th><th>Add.1</th><th>Add.2</th><th>Add.3</th><th>Add.4</th><th>Add.5</th><th>Add.6</th><th>Add.7</th><th>Add.8</th><th>Add.9</th><th>Add.10</th><th>Quotation Rcvd</th><th>Notes</th><th>BCA Grade</th></tr></thead><tbody id="tb"></tbody></table>
+      <table><thead><tr><th><input type="checkbox" id="selAllTh" onclick="toggleSelectAllShown()" title="Select / deselect all shown" style="margin-right:6px;vertical-align:middle;cursor:pointer" />Company</th><th>Trade</th><th>Contact</th><th>Tel/HP</th><th>Email</th><th>Remark</th><th><input type="checkbox" class="colchk" id="th_invDate" onclick="bulkStatus('invDate')" title="Apply Invitation (today) to all ticked rows"/> Invitation</th><th><input type="checkbox" class="colchk" id="th_noqDate" onclick="bulkStatus('noqDate')" title="Apply to all ticked rows"/> Not Quote</th><th><input type="checkbox" class="colchk" id="th_add1Date" onclick="bulkStatus('add1Date')" title="Apply to all ticked rows"/> Add.1</th><th><input type="checkbox" class="colchk" id="th_add2Date" onclick="bulkStatus('add2Date')" title="Apply to all ticked rows"/> Add.2</th><th><input type="checkbox" class="colchk" id="th_add3Date" onclick="bulkStatus('add3Date')" title="Apply to all ticked rows"/> Add.3</th><th><input type="checkbox" class="colchk" id="th_add4Date" onclick="bulkStatus('add4Date')" title="Apply to all ticked rows"/> Add.4</th><th><input type="checkbox" class="colchk" id="th_add5Date" onclick="bulkStatus('add5Date')" title="Apply to all ticked rows"/> Add.5</th><th><input type="checkbox" class="colchk" id="th_add6Date" onclick="bulkStatus('add6Date')" title="Apply to all ticked rows"/> Add.6</th><th><input type="checkbox" class="colchk" id="th_add7Date" onclick="bulkStatus('add7Date')" title="Apply to all ticked rows"/> Add.7</th><th><input type="checkbox" class="colchk" id="th_add8Date" onclick="bulkStatus('add8Date')" title="Apply to all ticked rows"/> Add.8</th><th><input type="checkbox" class="colchk" id="th_add9Date" onclick="bulkStatus('add9Date')" title="Apply to all ticked rows"/> Add.9</th><th><input type="checkbox" class="colchk" id="th_add10Date" onclick="bulkStatus('add10Date')" title="Apply to all ticked rows"/> Add.10</th><th><input type="checkbox" class="colchk" id="th_qrcDate" onclick="bulkStatus('qrcDate')" title="Apply to all ticked rows"/> Quotation Rcvd</th><th>Notes</th><th>BCA Grade</th></tr></thead><tbody id="tb"></tbody></table>
     </div>
   </div>
 </div>
@@ -1002,7 +1004,7 @@ function showGradePop(event,grade){
   p.style.top=Math.max(8,Math.min(event.clientY+8,window.innerHeight-h-8))+'px';
 }
 document.addEventListener('click',e=>{const p=document.getElementById('gradePop');if(p&&!e.target.closest('#gradePop')&&!e.target.closest('.gradechip'))p.style.display='none';});
-function setBcaStatus(txt){const el=document.getElementById('bcaStat');if(el)el.textContent=txt;}
+function setBcaStatus(txt){const el=document.getElementById('bcaStat');if(el){el.textContent='';el.style.display='none';}} // status line hidden — not needed
 async function refreshBcaGrades(force){
   if(location.protocol==='file:'){
     loadBcaCache();
@@ -1091,7 +1093,7 @@ function render(){
   upProg();
   const list=getFilt();
   document.getElementById('rc').textContent=`${list.length} result${list.length!==1?'s':''}`;
-  try{updateSelAllBtn();}catch(e){}
+  try{updateSelAllBtn();updateColChecks();}catch(e){}
   if(view==='grid'){
     if(!list.length){document.getElementById('cg').innerHTML=`<div class="empty"><div style="font-size:32px;margin-bottom:10px">🔍</div><div style="font-size:13px;color:var(--tx2)">No subcontractors found</div></div>`;return;}
     document.getElementById('cg').innerHTML=list.map(r=>{
@@ -1249,7 +1251,13 @@ function setCF(f){
   document.getElementById('fc-'+f).classList.add(cls);
   render();
 }
+// ── Undo (snapshots of statusMap before each status change) ──
+let _undoStack=[];
+function pushUndo(withRecords){try{_undoStack.push({s:JSON.stringify(statusMap),r:withRecords?JSON.stringify(records):null});if(_undoStack.length>40)_undoStack.shift();}catch(e){}updateUndoBtn();}
+function doUndo(){if(!_undoStack.length){toast('Nothing to undo');return;}const prev=_undoStack.pop();try{statusMap=JSON.parse(prev.s);if(prev.r)records=JSON.parse(prev.r);}catch(e){return;}saveStatus();if(prev.r){saveRecords();renderSB();}render();updateUndoBtn();toast('Undone ✓');}
+function updateUndoBtn(){const b=document.getElementById('undoBtn');if(b){b.disabled=!_undoStack.length;b.style.opacity=_undoStack.length?'1':'.45';}}
 function toggleField(id, field){
+  pushUndo();
   const st=statusMap[id]||{};
   const today=new Date().toISOString().slice(0,10);
   const newVal=st[field]?'':today;
@@ -1259,12 +1267,37 @@ function toggleField(id, field){
 }
 function isNfa(r){const s=statusMap[r.id]; return !!(s&&s.nfa);}
 function toggleNfa(id, cb){
+  pushUndo();
   const st=statusMap[id]||{};
   statusMap[id]={...st,nfa:cb.checked};
   saveStatus();
   render();
 }
+// Bulk-apply a status column to all ticked (selected) subcontractors
+const _STCOLS=['invDate','noqDate','add1Date','add2Date','add3Date','add4Date','add5Date','add6Date','add7Date','add8Date','add9Date','add10Date','qrcDate'];
+function bulkStatus(field){
+  let ids=[...emailSel];
+  if(!ids.length){ // nothing ticked → offer to apply to everyone shown
+    const shown=shownIds(); if(!shown.length){toast('Nothing shown');return;}
+    if(!confirm('No rows are ticked.\n\nApply this to ALL '+shown.length+' shown subcontractor(s)?\n(Or Cancel, tick the rows you want, then click again.)'))return;
+    ids=shown;
+  }
+  const today=new Date().toISOString().slice(0,10);
+  const allSet=ids.every(id=>{const s=statusMap[id];return s&&s[field];});
+  pushUndo();
+  ids.forEach(id=>{const s=statusMap[id]||{};statusMap[id]={...s,[field]:allSet?'':today};});
+  saveStatus();render();
+  toast((allSet?'Cleared on ':'Set today on ')+ids.length+' subcontractor(s)');
+}
+function updateColChecks(){
+  const ids=[...emailSel];
+  _STCOLS.forEach(f=>{const el=document.getElementById('th_'+f);if(!el)return;
+    if(!ids.length){el.checked=false;el.indeterminate=false;return;}
+    const set=ids.filter(id=>statusMap[id]&&statusMap[id][f]).length;
+    el.checked=set===ids.length; el.indeterminate=set>0&&set<ids.length;});
+}
 function uf(id,field,val){
+  if(field!=='note')pushUndo(); // undo manual date edits (not every note keystroke)
   const st=statusMap[id]||{};
   statusMap[id]={...st,[field]:val};
   clearTimeout(nTimers[id]);
@@ -1317,6 +1350,7 @@ function saveRec(){
 async function delRec(id){
   const r=records.find(x=>x.id===id);if(!r)return;
   if(!confirm(`Remove "${r.company}"?`))return;
+  pushUndo(true); // snapshot records too, so Remove can be undone
   records=records.filter(x=>x.id!==id);delete statusMap[id];
   renderSB();render();
   await saveRecords();await saveStatus();
@@ -1604,7 +1638,7 @@ function updateEmailBar(){
   const bar=document.getElementById('emailbar');if(!bar)return;
   const n=emailSel.size;
   document.getElementById('emailbarTxt').textContent=n+' selected';
-  try{updateSelAllBtn();}catch(e){}
+  try{updateSelAllBtn();updateColChecks();}catch(e){}
   bar.style.display=n>0?'flex':'none';
 }
 function clearEmailSel(){emailSel.clear();saveEmailSel();render();updateEmailBar();}
