@@ -1474,6 +1474,11 @@ const DEFAULT_TPLS=[
   {name:'Tender Clarification',subject:'{project} - Tender Clarification - {trade}',body:'Dear {contact},\n\nWe refer to your quotation for the {trade} works on {project} and would like to seek your clarification on the following:\n\n1. \n2. \n3. \n\nKindly revert with your response by {date}. Thank you for your cooperation.'}
 ];
 let _tpls=[],_tplIdx=0;
+// Tombstone: names of templates the user deliberately deleted, so built-in
+// defaults don't get re-added on reload (per-project, synced like templates).
+function tplsDelKey(){return currentProject?'prv_email_templates_del_'+currentProject.id:'prv_email_templates_del';}
+let _tplDel=new Set();
+function saveTplDel(){const arr=[..._tplDel];try{localStorage.setItem(tplsDelKey(),JSON.stringify(arr));}catch(e){}try{if(typeof sset==='function')sset(tplsDelKey(),arr);}catch(e){}}
 function getTpls(){
   try{const a=JSON.parse(localStorage.getItem(tplsLocalKey()));if(Array.isArray(a)&&a.length)return a;}catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_TPLS));
@@ -1504,13 +1509,17 @@ async function loadTplsFromCloud(){
   const ckey=tplsCloudKey(), lkey=tplsLocalKey();
   try{
     if(typeof sget!=='function')return;
+    // load the deleted-templates tombstone (cloud + local) first
+    _tplDel=new Set();
+    try{const cd=await sget(tplsDelKey());if(Array.isArray(cd))cd.forEach(n=>_tplDel.add((''+n).toLowerCase()));}catch(e){}
+    try{const ld=JSON.parse(localStorage.getItem(tplsDelKey()));if(Array.isArray(ld))ld.forEach(n=>_tplDel.add((''+n).toLowerCase()));}catch(e){}
     let cloud=await sget(ckey);
     if((!cloud||!cloud.length)){ try{const legacy=await sget('prv_email_templates'); if(Array.isArray(legacy)&&legacy.length) cloud=legacy;}catch(e){} } // seed new per-project set from your previous templates
     const local=getTpls();
     // MERGE by name — never drop a template; also ensure built-in templates are always present
     let merged=Array.isArray(cloud)?cloud.slice():[];
     const have=new Set(merged.map(t=>((t&&t.name)||'').toLowerCase()));
-    [].concat(local,DEFAULT_TPLS).forEach(t=>{const nm=((t&&t.name)||'').toLowerCase();if(nm&&!have.has(nm)){merged.push(t);have.add(nm);}});
+    [].concat(local,DEFAULT_TPLS).forEach(t=>{const nm=((t&&t.name)||'').toLowerCase();if(nm&&!have.has(nm)&&!_tplDel.has(nm)){merged.push(t);have.add(nm);}}); // don't resurrect a deliberately-deleted template
     merged.forEach(t=>{if(t&&t.subject!==undefined)t.subject=enforceProjectFirst(t.subject);}); // every subject leads with {project}
     merged.forEach(t=>{if(t&&t.body)t.body=t.body.replace(/\s*Thank you and best regards,?\s*\{name\}\s*Wee Hur Construction Pte Ltd\s*$/i,'').replace(/\s+$/,'');}); // strip old closing signature
     _tpls=merged;
@@ -1525,9 +1534,9 @@ function tplOptions(){return _tpls.map((t,i)=>`<option value="${i}"${i===_tplIdx
 function loadTplInto(){const t=_tpls[_tplIdx]||{subject:'',body:''};const s=document.getElementById('tplSubj'),b=document.getElementById('tplBody');if(s)s.value=t.subject||'';if(b)b.value=t.body||'';updateTplLinks();}
 function selectTpl(idx){_tplIdx=+idx;loadTplInto();}
 function saveTpl(){if(!_tpls[_tplIdx])return;_tpls[_tplIdx].subject=document.getElementById('tplSubj').value;_tpls[_tplIdx].body=document.getElementById('tplBody').value;saveTpls();}
-function newTpl(){const n=prompt('Name for the new template:','New template');if(!n)return;_tpls.push({name:n.trim(),subject:'',body:''});_tplIdx=_tpls.length-1;saveTpls();document.getElementById('tplSel').innerHTML=tplOptions();loadTplInto();toast('Template added — edit it below');}
-function renameTpl(){if(!_tpls[_tplIdx])return;const n=prompt('Rename template:',_tpls[_tplIdx].name||'');if(!n)return;_tpls[_tplIdx].name=n.trim();saveTpls();document.getElementById('tplSel').innerHTML=tplOptions();}
-function delTpl(){if(_tpls.length<=1){toast('Keep at least one template');return;}if(!confirm('Delete this template?'))return;_tpls.splice(_tplIdx,1);_tplIdx=0;saveTpls();document.getElementById('tplSel').innerHTML=tplOptions();loadTplInto();}
+function newTpl(){const n=prompt('Name for the new template:','New template');if(!n)return;const nm=n.trim().toLowerCase();if(_tplDel.has(nm)){_tplDel.delete(nm);saveTplDel();}_tpls.push({name:n.trim(),subject:'',body:''});_tplIdx=_tpls.length-1;saveTpls();document.getElementById('tplSel').innerHTML=tplOptions();loadTplInto();toast('Template added — edit it below');}
+function renameTpl(){if(!_tpls[_tplIdx])return;const n=prompt('Rename template:',_tpls[_tplIdx].name||'');if(!n)return;const nm=n.trim().toLowerCase();if(_tplDel.has(nm)){_tplDel.delete(nm);saveTplDel();}_tpls[_tplIdx].name=n.trim();saveTpls();document.getElementById('tplSel').innerHTML=tplOptions();}
+function delTpl(){if(_tpls.length<=1){toast('Keep at least one template');return;}if(!confirm('Delete this template?'))return;const dn=((_tpls[_tplIdx]&&_tpls[_tplIdx].name)||'').toLowerCase();if(dn){_tplDel.add(dn);saveTplDel();}_tpls.splice(_tplIdx,1);_tplIdx=0;saveTpls();document.getElementById('tplSel').innerHTML=tplOptions();loadTplInto();}
 function toBold(s){if(!s)return s;let o='';for(const ch of(''+s)){const c=ch.codePointAt(0);if(c>=65&&c<=90)o+=String.fromCodePoint(0x1D400+(c-65));else if(c>=97&&c<=122)o+=String.fromCodePoint(0x1D41A+(c-97));else if(c>=48&&c<=57)o+=String.fromCodePoint(0x1D7CE+(c-48));else o+=ch;}return o;}
 function fillTpl(s,it,bold){
   const proj=(typeof currentProject!=='undefined'&&currentProject)?currentProject.name:'';
