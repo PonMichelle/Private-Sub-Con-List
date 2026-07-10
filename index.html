@@ -151,6 +151,7 @@ td.nfa-name{color:#e91e8c!important;font-weight:800!important}
 .fc.acta{background:#8a5c00;color:#fff;border-color:#8a5c00}
 .fc.actb{background:#1a56a0;color:#fff;border-color:#1a56a0}
 .fc.actr{background:#a02020;color:#fff;border-color:#a02020}
+.fc.actx{background:var(--sur);color:#a02020;border:1.5px dashed #a02020;text-decoration:line-through;box-shadow:none}
 .cbrow2{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:0.5px solid var(--bdr)}
 .cbrow2:last-child{border-bottom:none}
 .cblbl2{font-size:11.5px;cursor:pointer;user-select:none;color:var(--tx2);flex:1}
@@ -417,6 +418,8 @@ body:has(#wallpaperBg.active){background:transparent}
           <option value="phone-desc">Contact no. ↓</option>
           <option value="company-az">Company A–Z</option>
           <option value="company-za">Company Z–A</option>
+          <option value="trade-az">Trade A–Z</option>
+          <option value="trade-za">Trade Z–A</option>
         </select>
         <button class="vb act" id="vbG" onclick="setView('grid')" title="Cards"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
         <button class="vb" id="vbT" onclick="setView('table')" title="Table"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></button>
@@ -431,12 +434,12 @@ body:has(#wallpaperBg.active){background:transparent}
       </div>
     </div>
     <div class="fbar">
-      <button class="fc act" id="fc-all" onclick="setCF('all')">All</button>
-      <button class="fc" id="fc-yes" onclick="setCF('yes')">✉ Invited</button>
-      <button class="fc" id="fc-no" onclick="setCF('no')">○ Not invited</button>
-      <button class="fc" id="fc-qr" onclick="setCF('qr')">📥 Quotation received</button>
-      <button class="fc" id="fc-nq" onclick="setCF('nq')">✕ Not Quote</button>
-      <button class="fc" id="fc-nfa" onclick="setCF('nfa')">✕ Not for ask quote</button>
+      <button class="fc act" id="fc-all" onclick="setCF('all')" title="Clear all filters">All</button>
+      <button class="fc" id="fc-yes" onclick="setCF('yes')" title="Click to show only Invited, click again to hide Invited">✉ Invited</button>
+      <button class="fc" id="fc-no" onclick="setCF('no')" title="Click to show only Not invited, click again to hide Not invited">○ Not invited</button>
+      <button class="fc" id="fc-qr" onclick="setCF('qr')" title="Click to show only Quotation received, click again to hide Quotation received">📥 Quotation received</button>
+      <button class="fc" id="fc-nq" onclick="setCF('nq')" title="Click to show only Not Quote, click again to hide Not Quote">✕ Not Quote</button>
+      <button class="fc" id="fc-nfa" onclick="setCF('nfa')" title="Click to show only Not for ask quote, click again to hide Not for ask quote">✕ Not for ask quote</button>
       <div class="pw"><div class="pbb"><div class="pbf" id="pbf" style="width:0%"></div></div><span class="pt" id="pbt">0 / 0 contacted</span></div>
     </div>
     <div class="cards-area" id="ca"><div class="cgrid" id="cg"></div></div>
@@ -491,7 +494,7 @@ const SK_R='prv_subcon_records';
 const SK_OV='prv_subcon_overrides'; // edits & deletions of baked (built-in) subcontractors — SHARED
 const SK_S='hdb_subcon_status';
 const SK_PROJECTS='prv_projects';
-let records=[],statusMap={},nextId=1,activeTrade='ALL',view='grid',cf='all',tq='',eid=null;
+let records=[],statusMap={},nextId=1,activeTrade='ALL',view='grid',cf={yes:0,no:0,qr:0,nq:0,nfa:0},tq='',eid=null;
 let recOverrides={ov:{},del:[]}; // ov={id:editedRecord}, del=[deletedBakedIds]
 // Rebuild the live list from baked data: apply saved edits, drop deleted baked rows, append new additions.
 function buildRecords(additions){
@@ -1057,8 +1060,15 @@ function sortList(arr){
   if(sortMode==='phone-asc'||sortMode==='phone-desc'){
     arr.sort((a,b)=>{const x=phoneKey(a),y=phoneKey(b);if(!x&&!y)return 0;if(!x)return 1;if(!y)return -1;const c=x.localeCompare(y,undefined,{numeric:true});return sortMode==='phone-desc'?-c:c;});
   } else if(sortMode==='company-az'){arr.sort((a,b)=>(a.company||'').localeCompare(b.company||''));}
+  else if(sortMode==='trade-az'){arr.sort((a,b)=>(a.trade||'').localeCompare(b.trade||'')||(a.company||'').localeCompare(b.company||''));}
+  else if(sortMode==='trade-za'){arr.sort((a,b)=>(b.trade||'').localeCompare(a.trade||'')||(a.company||'').localeCompare(b.company||''));}
   else if(sortMode==='company-za'){arr.sort((a,b)=>(b.company||'').localeCompare(a.company||''));}
   return arr;
+}
+function cfMatch(st){
+  const p={yes:!!st.invDate,no:!st.invDate,qr:!!st.qrcDate,nq:!!st.noqDate,nfa:!!st.nfa};
+  for(const k in cf){if(cf[k]===1&&!p[k])return false;if(cf[k]===-1&&p[k])return false;}
+  return true;
 }
 function getFilt(){
   const q=document.getElementById('mq').value.toLowerCase();
@@ -1066,7 +1076,7 @@ function getFilt(){
     const mt=activeTrade==='ALL'||r.trade===activeTrade;
     const ms=!q||r.company.toLowerCase().includes(q)||(r.contact||'').toLowerCase().includes(q)||(r.tel||'').includes(q)||(r.hp||'').includes(q)||(r.email||'').toLowerCase().includes(q)||r.trade.toLowerCase().includes(q)||(r.remark||'').toLowerCase().includes(q)||getGrade(r).toLowerCase().includes(q);
     const st=statusMap[r.id]||{};
-    const mc=cf==='all'||(cf==='yes'&&!!st.invDate)||(cf==='no'&&!st.invDate)||(cf==='qr'&&!!st.qrcDate)||(cf==='nq'&&!!st.noqDate)||(cf==='nfa'&&!!st.nfa);
+    const mc=cfMatch(st);
     return mt&&ms&&mc;
   })).sort((a,b)=>(isNfa(a)?1:0)-(isNfa(b)?1:0)); // "not for ask quote" always at the bottom (stable)
 }
@@ -1245,11 +1255,24 @@ function initColResize(){
     });
   });
 }
+const CF_CLS={yes:'actb',no:'act',qr:'acta',nq:'actr',nfa:'actr'};
 function setCF(f){
-  cf=f;['all','yes','no','qr','nq','nfa'].forEach(k=>{const el=document.getElementById('fc-'+k);if(el)el.classList.remove('act','actg','acta','actr');});
-  const cls=f==='yes'?'actb':f==='qr'?'acta':(f==='nq'||f==='nfa')?'actr':'act';
-  document.getElementById('fc-'+f).classList.add(cls);
+  if(f==='all'){cf={yes:0,no:0,qr:0,nq:0,nfa:0};}
+  else{cf[f]=cf[f]===0?1:(cf[f]===1?-1:0);}
+  updateCFUI();
   render();
+}
+function updateCFUI(){
+  const allOff=Object.values(cf).every(v=>v===0);
+  const allEl=document.getElementById('fc-all');
+  if(allEl)allEl.classList.toggle('act',allOff);
+  ['yes','no','qr','nq','nfa'].forEach(k=>{
+    const el=document.getElementById('fc-'+k);
+    if(!el)return;
+    el.classList.remove('act','actg','acta','actr','actx');
+    if(cf[k]===1)el.classList.add(CF_CLS[k]);
+    else if(cf[k]===-1)el.classList.add('actx');
+  });
 }
 // ── Undo (snapshots of statusMap before each status change) ──
 let _undoStack=[];
@@ -1574,8 +1597,7 @@ function showBatchModal(items,client){
       +'<input id="tplSubj" oninput="saveTpl()" placeholder="Subject" style="width:100%;padding:6px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;margin-bottom:6px;font-family:inherit" />'
       +'<textarea id="tplBody" oninput="saveTpl();updateTplLinks()" rows="8" placeholder="Message body" style="width:100%;padding:7px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;font-family:inherit;resize:vertical"></textarea>'
       +'<div id="tplLinks" style="font-size:10.5px;margin-top:5px;word-break:break-all"></div>'
-      +'<div style="display:flex;align-items:center;gap:7px;margin-top:7px"><label style="font-size:11.5px;color:var(--tx2);font-weight:500;white-space:nowrap">Quote deadline {date}:</label><input id="tplDate" placeholder="e.g. 20 Jun 2026" style="flex:1;padding:5px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;font-family:inherit" /></div>'
-      +'<div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Placeholders auto-fill per subcontractor: <b>{company}</b> <b>{contact}</b> <b>{trade}</b> <b>{project}</b> <b>{fulltitle}</b> <b>{documentlink}</b> <b>{name}</b> <b>{date}</b>.</div>'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-top:7px"><label style="font-size:11.5px;color:var(--tx2);font-weight:500;white-space:nowrap">Quote deadline {date}:</label><input id="tplDate" placeholder="e.g. 20 Jun 2026" style="flex:1;padding:5px 9px;font-size:12px;border:1px solid var(--bdr2);border-radius:6px;font-family:inherit" /></div>'      +'<div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Placeholders auto-fill per subcontractor: <b>{company}</b> <b>{contact}</b> <b>{trade}</b> <b>{project}</b> <b>{fulltitle}</b> <b>{documentlink}</b> <b>{name}</b> <b>{date}</b>.</div>'
       +'</div>'
       +'<div id="attBox" style="padding:10px 18px 12px;border-top:1px solid var(--bdr);margin-top:4px">'
       +'<div style="font-size:11.5px;font-weight:600;color:var(--tx2);margin-bottom:4px">🔗 Document links <span style="font-weight:400;color:var(--tx3)">— added to every email body (works with “Open all” / webmail too)</span></div>'
