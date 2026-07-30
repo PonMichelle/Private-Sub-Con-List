@@ -11,7 +11,16 @@
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;font-size:13px}
 a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .app{display:flex;flex:1;overflow:hidden}
-.sidebar{width:250px;flex-shrink:0;background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sidebar{width:250px;flex-shrink:0;background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;position:relative;transition:width .25s cubic-bezier(.34,1.56,.64,1);min-width:180px;max-width:420px}
+.sidebar.collapsed{width:0!important;min-width:0;overflow:hidden}
+.resize-handle{position:absolute;right:-4px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:10;display:flex;align-items:center;justify-content:center}
+.resize-handle::after{content:'';width:3px;height:40px;background:var(--bdr2);border-radius:2px;transition:all .2s}
+.resize-handle:hover::after{background:var(--blue);height:60px;width:4px}
+.resize-handle.dragging::after{background:var(--blue);height:80px;width:4px}
+.sidebar-toggle{position:fixed;left:0;top:50%;transform:translateY(-50%);width:20px;height:48px;background:var(--sur);border:1.5px solid var(--bdr);border-left:none;border-radius:0 8px 8px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;transition:all .2s;box-shadow:2px 0 8px rgba(67,97,238,0.1);color:var(--tx3)}
+.sidebar-toggle:hover{background:var(--bblue);color:var(--blue);box-shadow:3px 0 12px rgba(67,97,238,0.2)}
+.sidebar-toggle svg{transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
+.sidebar-toggle.open svg{transform:rotate(180deg)}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .sh{padding:14px 16px;border-bottom:1px solid var(--bdr);position:relative;overflow:hidden}
 @keyframes logoPulse{0%{background-position:0% center}100%{background-position:240% center}}
@@ -373,8 +382,12 @@ body:has(#wallpaperBg.active){background:transparent}
   </div>
 </div>
 <div id="wallpaperBg"></div>
+<button class="sidebar-toggle open" id="sidebarToggle" onclick="toggleSidebar()" title="Collapse/expand sidebar">
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+</button>
 <div class="app">
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
+    <div class="resize-handle" id="resizeHandle"></div>
     <div class="sh">
       <span class="spark s1">✦</span><span class="spark s2">✧</span><span class="spark s3">⋆</span><span class="spark s4">✦</span><span class="spark s5">✧</span><span class="spark s6">⋆</span>
       <div class="brand">
@@ -1978,6 +1991,76 @@ async function exportCSV(){
     toast('Export failed: '+err.message);
   }
 }
+
+// ── Sidebar resize & collapse ─────────────────────────────────────
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const btn=document.getElementById('sidebarToggle');
+  const isCollapsed=sb.classList.contains('collapsed');
+  if(isCollapsed){
+    sb.classList.remove('collapsed');
+    btn.classList.add('open');
+    btn.style.left=(sb.offsetWidth)+'px';
+    try{localStorage.setItem('prv_sidebarWidth',sb.style.width||'250px');}catch(e){}
+  } else {
+    sb.classList.add('collapsed');
+    btn.classList.remove('open');
+    btn.style.left='0px';
+  }
+}
+
+(function initResize(){
+  const sb=document.getElementById('sidebar');
+  const handle=document.getElementById('resizeHandle');
+  const btn=document.getElementById('sidebarToggle');
+  let dragging=false, startX=0, startW=0;
+
+  try{
+    const saved=localStorage.getItem('prv_sidebarWidth');
+    if(saved){sb.style.width=saved;btn.style.left=parseInt(saved)+'px';}
+    else{btn.style.left='250px';}
+  }catch(e){btn.style.left='250px';}
+
+  handle.addEventListener('mousedown',e=>{
+    dragging=true; startX=e.clientX; startW=sb.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.cursor='col-resize';
+    document.body.style.userSelect='none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const newW=Math.min(420, Math.max(180, startW+(e.clientX-startX)));
+    sb.style.width=newW+'px';
+    btn.style.left=newW+'px';
+  });
+
+  document.addEventListener('mouseup',()=>{
+    if(!dragging)return;
+    dragging=false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+    try{localStorage.setItem('prv_sidebarWidth',sb.style.width);}catch(e){}
+  });
+
+  handle.addEventListener('touchstart',e=>{
+    dragging=true; startX=e.touches[0].clientX; startW=sb.offsetWidth;
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    const newW=Math.min(420,Math.max(180,startW+(e.touches[0].clientX-startX)));
+    sb.style.width=newW+'px';
+    btn.style.left=newW+'px';
+  });
+  document.addEventListener('touchend',()=>{
+    if(!dragging)return;
+    dragging=false;
+    try{localStorage.setItem('prv_sidebarWidth',sb.style.width);}catch(e){}
+  });
+})();
 
 </script>
 <!-- Wallpaper picker UI -->
