@@ -433,6 +433,7 @@ body:has(#wallpaperBg.active){background:transparent}
       <div class="tr">
         <span class="rc" id="rc"></span>
         <button class="btn" id="selAllBtn" onclick="toggleSelectAllShown()" title="Tick / untick every subcontractor currently shown (the selected trade)">☑ Select all</button>
+        <button class="btn btn-blue" onclick="sendAllShown(event)" title="Tick every subcontractor currently shown and go straight to sending them an email">📤 Send all</button>
         <select id="sortSel" onchange="setSort(this.value)" title="Sort by" style="padding:5px 8px;font-size:11.5px;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--sur);color:var(--tx2);font-family:inherit;cursor:pointer">
           <option value="default">Sort: Default</option>
           <option value="phone-asc">Contact no. ↑</option>
@@ -1924,6 +1925,13 @@ function mergeDuplicateTradeItems(items){
     (it.emails||'').split(',').map(e=>e.trim()).filter(Boolean).forEach(e=>{const lc=e.toLowerCase();if(!g.emailSet.has(lc))g.emailSet.set(lc,e);});
   });
   return order.map(k=>{const g=groups.get(k);return {...g,trade:joinTrades(g.trades),emails:[...g.emailSet.values()].join(',')};});
+}
+function sendAllShown(event){
+  const ids=shownIds();
+  if(!ids.length){toast('Nothing shown');return;}
+  ids.forEach(id=>emailSel.add(id));
+  saveEmailSel();render();updateEmailBar();
+  emailSelectedSend(event);
 }
 function emailSelectedSend(event){
   event.preventDefault();event.stopPropagation();
