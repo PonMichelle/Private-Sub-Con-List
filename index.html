@@ -433,7 +433,6 @@ body:has(#wallpaperBg.active){background:transparent}
       <div class="tr">
         <span class="rc" id="rc"></span>
         <button class="btn" id="selAllBtn" onclick="toggleSelectAllShown()" title="Tick / untick every subcontractor currently shown (the selected trade)">☑ Select all</button>
-        <button class="btn btn-blue" onclick="sendAllShown(event)" title="Tick every subcontractor currently shown and go straight to sending them an email">📤 Send all</button>
         <select id="sortSel" onchange="setSort(this.value)" title="Sort by" style="padding:5px 8px;font-size:11.5px;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--sur);color:var(--tx2);font-family:inherit;cursor:pointer">
           <option value="default">Sort: Default</option>
           <option value="phone-asc">Contact no. ↑</option>
@@ -1793,7 +1792,6 @@ function showBatchModal(items,client){
   document.getElementById('batchList').innerHTML=items.map((it,i)=>`<div class="batchrow" id="brow${i}"><span class="bname" title="${(it.emails||'').replace(/"/g,'&quot;')}">${it.company}</span><button class="btn" style="padding:5px 9px;font-size:12px" onclick="copyOneBatch(${i})" title="Copy this email to paste into your mail">📋</button><button class="btn btn-open" onclick="openOneBatch(${i})">✉ Open</button></div>`).join('');
   loadFullTitle();loadDocLinks();loadSignature();
   ov.classList.add('open');
-  if(_autoOpenAllPending){_autoOpenAllPending=false;openAllBatch();}
 }
 function openOneBatch(i){
   const it=_batchItems[i];if(!it)return true;
@@ -1926,15 +1924,6 @@ function mergeDuplicateTradeItems(items){
     (it.emails||'').split(',').map(e=>e.trim()).filter(Boolean).forEach(e=>{const lc=e.toLowerCase();if(!g.emailSet.has(lc))g.emailSet.set(lc,e);});
   });
   return order.map(k=>{const g=groups.get(k);return {...g,trade:joinTrades(g.trades),emails:[...g.emailSet.values()].join(',')};});
-}
-let _autoOpenAllPending=false;
-function sendAllShown(event){
-  const ids=shownIds();
-  if(!ids.length){toast('Nothing shown');return;}
-  ids.forEach(id=>emailSel.add(id));
-  saveEmailSel();render();updateEmailBar();
-  _autoOpenAllPending=true; // fires "Open all" automatically once the compose list is ready — no extra click needed
-  emailSelectedSend(event);
 }
 function emailSelectedSend(event){
   event.preventDefault();event.stopPropagation();
