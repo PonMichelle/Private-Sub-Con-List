@@ -343,6 +343,108 @@ body:has(#wallpaperBg.active){background:transparent}
 .epicker-def{font-size:11px;color:var(--tx3);padding:6px 14px 8px;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
 .epicker-def input{accent-color:var(--blue);cursor:pointer;margin:0}
 </style>
+<!-- ===== Optional "Cartoon" theme (toggle at bottom-right; saved per device) ===== -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Luckiest+Guy&display=swap" rel="stylesheet"/>
+<script>try{if(localStorage.getItem('subconhub_skin')==='toon')document.documentElement.classList.add('toon')}catch(e){}</script>
+<style id="toonSkin">
+.toon-scene,.skin-btn{display:none}
+.skin-btn{position:fixed;bottom:24px;right:80px;z-index:100000;font:600 12.5px/1 'IBM Plex Sans',sans-serif;padding:10px 14px;border-radius:999px;border:1.5px solid var(--bdr2);background:#fff;color:var(--tx);cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.15);display:inline-flex;align-items:center;gap:6px}
+.skin-btn:hover{transform:translateY(-1px)}
+html.toon{--ink:#24203a;--bg:#bfeeff;--sur:#fffdf7;--sur2:#fff7e0;--bdr:#24203a;--bdr2:#24203a;--tx:#24203a;--tx2:#4a4466;--tx3:#6b6585;
+  --blue:#2f6fe4;--bblue:#dcebff;--lblue:#cfe4ff;--green:#1f9d55;--bgreen:#dbf7e6;--amber:#b77900;--bamber:#fff1c2;--red:#e5484d;--r:11px;--rl:18px}
+html.toon body{font-family:'Fredoka','IBM Plex Sans',sans-serif;font-size:13.5px;background:linear-gradient(180deg,#4fc3ff 0%,#bfeeff 70%,#e9fbff 100%) fixed}
+html.toon .toon-scene{display:block;position:fixed;inset:0;z-index:-2;pointer-events:none;overflow:hidden}
+.toon-cloud{position:absolute;background:#fff;border-radius:60px;left:-220px;animation:toonDrift linear infinite}
+.toon-cloud::before,.toon-cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.toon-cloud::before{width:55%;height:150%;left:12%;top:-60%}.toon-cloud::after{width:40%;height:120%;right:12%;top:-40%}
+.toon-cloud.k1{width:150px;height:44px;top:10%;animation-duration:75s}
+.toon-cloud.k2{width:110px;height:34px;top:28%;animation-duration:100s;animation-delay:-45s}
+.toon-cloud.k3{width:190px;height:54px;top:18%;animation-duration:125s;animation-delay:-85s}
+@keyframes toonDrift{to{transform:translateX(calc(100vw + 450px))}}
+.toon-hill{position:absolute;bottom:-40px;border-radius:50% 50% 0 0;border:3px solid #24203a;border-bottom:none}
+.toon-hill.g1{width:55vw;height:150px;left:-8vw;background:#5bd16b}
+.toon-hill.g2{width:45vw;height:110px;left:38vw;background:#3aa64b}
+.toon-hill.g3{width:40vw;height:160px;right:-10vw;background:#5bd16b}
+.toon-coin{position:absolute;width:24px;height:24px;border-radius:50%;border:3px solid #24203a;background:radial-gradient(circle at 35% 35%,#fff3b0,#ffb703 55%,#e08e00);animation:toonBob 2.4s ease-in-out infinite}
+@keyframes toonBob{0%,100%{transform:translateY(0) scaleX(1)}50%{transform:translateY(-14px) scaleX(.55)}}
+@keyframes toonPop{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+
+html.toon .skin-btn{display:inline-flex;font-family:'Fredoka',sans-serif;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink);background:#ffd23f}
+html:not(.toon) .skin-btn{display:inline-flex}
+/* login gate + project screen */
+html.toon #loginGate{background:linear-gradient(180deg,#4fc3ff,#bfeeff)!important;font-family:'Fredoka',sans-serif!important}
+html.toon #loginGate>div{border:3px solid var(--ink)!important;border-radius:26px!important;box-shadow:0 8px 0 var(--ink)!important;background:#fffdf7!important}
+html.toon #loginGate input[type=password]{border:3px solid var(--ink)!important;border-radius:14px!important;text-align:center}
+html.toon #loginGate button{background:#ff5a4e!important;border:3px solid var(--ink)!important;border-radius:14px!important;box-shadow:0 4px 0 var(--ink)!important;font-family:'Fredoka',sans-serif!important}
+html.toon .proj-screen{background:radial-gradient(ellipse 45% 22% at 15% 108%,#5bd16b 98%,transparent 100%),radial-gradient(ellipse 40% 18% at 85% 108%,#3aa64b 98%,transparent 100%),linear-gradient(180deg,#4fc3ff,#bfeeff)}
+html.toon .proj-box{border:3px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);animation:toonPop .45s cubic-bezier(.2,1.6,.4,1)}
+html.toon .proj-box h1{font-family:'Luckiest Guy',cursive;font-weight:400;font-size:26px;letter-spacing:1px;color:#ff5a4e;text-shadow:2px 2px 0 var(--ink)}
+html.toon .proj-item{border:2.5px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--ink)}
+html.toon .proj-item:hover{transform:translateY(-2px);box-shadow:0 5px 0 var(--ink);background:#fff4c2}
+html.toon .proj-new input{border:2.5px solid var(--ink);border-radius:12px}
+/* sidebar */
+html.toon .sidebar{background:rgba(255,253,247,.92);border-right:3px solid var(--ink)}
+html.toon .sh{border-bottom:3px solid var(--ink)}
+html.toon .tsw{border-bottom:2px dashed var(--ink)}
+html.toon .tsw input,html.toon .sw input,html.toon .upill,html.toon #sortSel{border:2.5px solid var(--ink)!important;border-radius:12px!important;background:#fff!important}
+html.toon .ti{border-radius:12px;margin:2px 8px;border:2px solid transparent;font-weight:500}
+html.toon .ti:hover{background:#fff4c2}
+html.toon .ti.act{background:#ffd23f;color:var(--ink);border:2px solid var(--ink);box-shadow:0 3px 0 var(--ink);font-weight:700}
+html.toon .tc{border:2px solid var(--ink);background:#fff;color:var(--ink);font-weight:600}
+html.toon .ti.act .tc{background:#fff;color:var(--ink)}
+html.toon .sidebar-toggle{border:3px solid var(--ink);border-left:none;background:#ffd23f}
+html.toon .cur-proj{border:2px solid var(--ink);border-radius:999px;background:#dcebff;color:var(--ink);font-weight:600}
+/* toolbar + filter bar */
+html.toon .toolbar{margin:10px 12px 0;border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);background:#fffdf7}
+html.toon .fbar{background:transparent;border-bottom:none;padding:12px 16px 6px}
+html.toon .btn,html.toon .vb{border:2.5px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);color:var(--ink);font-weight:600;background:#fff;transition:transform .08s,box-shadow .08s}
+html.toon .btn:hover,html.toon .vb:hover{transform:translateY(-2px);box-shadow:0 5px 0 var(--ink);background:#fff4c2}
+html.toon .btn:active,html.toon .vb:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+html.toon .btn-blue,html.toon .btn-open{background:#ff5a4e;color:#fff;border-color:var(--ink)}
+html.toon .btn-blue:hover,html.toon .btn-open:hover{background:#ff6f64}
+html.toon .vb.act{background:#ffd23f}
+html.toon .fc{border:2.5px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);font-weight:600;box-shadow:0 3px 0 var(--ink);padding:4px 12px}
+html.toon .fc:hover{background:#fff4c2}
+html.toon .fc.act{background:#ffd23f;color:var(--ink)}
+html.toon .fc.actb{background:#2f6fe4;color:#fff}
+html.toon .fc.actg{background:#1f9d55;color:#fff}
+html.toon .fc.acta{background:#ffb703;color:var(--ink)}
+html.toon .fc.actr{background:#e5484d;color:#fff}
+html.toon .pbb{height:12px;width:120px;border:2.5px solid var(--ink);border-radius:999px;background:#fff}
+html.toon .pbf{background:repeating-linear-gradient(45deg,#3dd6b5 0 8px,#26b896 8px 16px)}
+html.toon .pt{color:var(--ink);font-weight:600}
+/* cards */
+html.toon .card{border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);background:#fffdf7;animation:toonPop .4s cubic-bezier(.2,1.6,.4,1) both;transition:transform .15s,box-shadow .15s}
+html.toon .card:hover{transform:translateY(-3px);box-shadow:0 8px 0 var(--ink)}
+html.toon .card.inv{background:#eaf4ff;border-color:var(--ink);box-shadow:inset 7px 0 0 #2f6fe4,0 5px 0 var(--ink)}
+html.toon .card.qrcv{background:#fff6d6;border-width:3px;border-color:var(--ink);box-shadow:inset 7px 0 0 #ffb703,0 5px 0 var(--ink)}
+html.toon .card.nq{background:#ffecec;border-width:3px;border-color:var(--ink);box-shadow:inset 7px 0 0 #e5484d,0 5px 0 var(--ink)}
+html.toon .card.selem{outline:3px dashed #ff5a4e;outline-offset:3px}
+html.toon .cname{font-weight:700;font-size:14.5px}
+html.toon .qrbadge,html.toon .invbadge,html.toon .nqbadge,html.toon .nfabadge,html.toon .cbadge{border:2px solid var(--ink);border-radius:999px;font-weight:700}
+html.toon .gradechip{border:2px solid var(--ink);border-radius:999px;background:#ffd23f;color:var(--ink)}
+html.toon .dpill{border:2px solid var(--ink);border-radius:999px}
+html.toon .di,html.toon .ni,html.toon .dinput{border:2px solid var(--ink);border-radius:10px;background:#fff}
+html.toon .cdiv,html.toon .csec{border-top:2px dashed var(--ink)}
+html.toon .drow svg{color:#ff5a4e}
+/* table */
+html.toon .tw{margin:6px 12px 12px;border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);background:#fffdf7}
+html.toon th{background:#ffd23f;color:var(--ink);border-bottom:3px solid var(--ink);font-weight:700}
+html.toon td{border-bottom:1.5px dashed #b9b3cf}
+html.toon tr:hover td{background:#fff4c2}
+/* modals + popups */
+html.toon .modal,html.toon .batchbox{border:3px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink);background:#fffdf7;animation:toonPop .35s cubic-bezier(.2,1.6,.4,1)}
+html.toon .modal h2,html.toon .batchhd{font-family:'Luckiest Guy',cursive;font-weight:400;font-size:22px;letter-spacing:1px;color:#ff5a4e;text-shadow:1.5px 1.5px 0 var(--ink)}
+html.toon .fg input,html.toon .fg select,html.toon .fg textarea{border:2.5px solid var(--ink);border-radius:12px;background:#fff}
+html.toon .epicker,html.toon .gradepop,html.toon .wp-panel{border:3px solid var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--ink)}
+html.toon .emailbar,html.toon .toast{border:3px solid var(--ink);box-shadow:0 5px 0 rgba(36,32,58,.5);background:#2f2a4a}
+html.toon .wp-btn{border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
+html.toon ::-webkit-scrollbar{width:9px;height:9px}
+html.toon ::-webkit-scrollbar-thumb{background:#ffb703;border:2px solid var(--ink);border-radius:6px}
+/* with a wallpaper chosen, the wallpaper replaces the cartoon sky */
+html.toon body:has(#wallpaperBg.active) .toon-scene{display:none}
+@media (prefers-reduced-motion:reduce){html.toon *{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
 <div id="loginGate" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1f2937,#0b1220);display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif">
@@ -2424,6 +2526,187 @@ document.addEventListener('click',function(e){
 })();
 /* Apply once on load in case a project is already selected */
 setTimeout(applyProjectWallpaper,100);
+</script>
+<!-- ===== Cartoon theme: scenery + on/off switch ===== -->
+<div class="toon-scene" aria-hidden="true">
+  <div class="toon-cloud k1"></div><div class="toon-cloud k2"></div><div class="toon-cloud k3"></div>
+  <div class="toon-coin" style="left:6%;top:42%"></div><div class="toon-coin" style="right:5%;top:55%;animation-delay:.8s"></div>
+  <div class="toon-hill g1"></div><div class="toon-hill g2"></div><div class="toon-hill g3"></div>
+</div>
+<button class="skin-btn" id="skinBtn" onclick="toggleSkin()" title="Switch between the classic look and the cartoon look"></button>
+<script>
+(function(){
+  function label(){var on=document.documentElement.classList.contains('toon');
+    document.getElementById('skinBtn').textContent=on?'🎨 Cartoon theme: ON':'🎨 Cartoon theme: OFF';}
+  window.toggleSkin=function(){
+    var on=document.documentElement.classList.toggle('toon');
+    try{localStorage.setItem('subconhub_skin',on?'toon':'classic')}catch(e){}
+    label();
+  };
+  label();
+})();
+</script>
+<!-- ===== Cartoon theme: original animated characters (only when Cartoon theme + Animations are ON) ===== -->
+<style id="toonActors">
+.toon-stage,.anim-btn,.coin-sprite{display:none}
+html.toon .anim-btn{display:inline-flex;position:fixed;bottom:24px;right:290px;z-index:100000;font:600 12.5px/1 'Fredoka',sans-serif;padding:10px 14px;border-radius:999px;border:3px solid #24203a;background:#fff;color:#24203a;cursor:pointer;box-shadow:0 4px 0 #24203a;align-items:center;gap:6px}
+html.toon .anim-btn:hover{transform:translateY(-1px);background:#fff4c2}
+/* the stage is its own strip at the bottom of the page: it never covers cards, table or colour codes */
+html.toon:not(.noanim) .toon-stage{display:block;position:relative;flex:0 0 78px;height:78px;overflow:hidden;border-top:3px solid #24203a;
+  background:linear-gradient(180deg,#bfeeff 0%,#dff7ff 58%,#5bd16b 58%,#5bd16b 100%)}
+.toon-stage::after{content:"";position:absolute;left:0;right:0;top:58%;height:3px;background:#3aa64b}
+.actor{position:absolute;bottom:12px;pointer-events:none}
+.actor svg{display:block;overflow:visible}
+/* brick buddies: walk back and forth */
+.buddy-walk{animation:walkX var(--dur,22s) linear infinite;animation-delay:var(--delay,0s)}
+.buddy-walk .flip{animation:flipDir var(--dur,22s) steps(1) infinite;animation-delay:var(--delay,0s);transform-box:fill-box;transform-origin:50% 50%}
+.buddy-walk .bob{animation:bobY .5s ease-in-out infinite}
+.buddy-walk .legA{animation:legA .5s ease-in-out infinite;transform-box:fill-box;transform-origin:top center}
+.buddy-walk .legB{animation:legB .5s ease-in-out infinite;transform-box:fill-box;transform-origin:top center}
+@keyframes walkX{0%{left:190px}50%{left:calc(100% - 500px)}100%{left:190px}}
+@keyframes flipDir{0%{transform:scaleX(1)}50%{transform:scaleX(-1)}}
+@keyframes bobY{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes legA{0%,100%{transform:rotate(22deg)}50%{transform:rotate(-22deg)}}
+@keyframes legB{0%,100%{transform:rotate(-22deg)}50%{transform:rotate(22deg)}}
+/* penguin: waddle across, wave in the middle */
+.peng{animation:pengX 30s linear infinite}
+.peng .waddle{animation:waddle .6s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+.peng .flip{animation:flipDir 30s steps(1) infinite;transform-box:fill-box;transform-origin:50% 50%}
+.peng .wave{transform-box:fill-box;transform-origin:10% 90%;animation:wave 30s ease-in-out infinite}
+@keyframes pengX{0%{left:calc(100% - 490px)}45%{left:200px}50%{left:200px}95%{left:calc(100% - 490px)}100%{left:calc(100% - 490px)}}
+@keyframes waddle{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+@keyframes wave{0%,44%{transform:rotate(0)}46%{transform:rotate(-55deg)}47.5%{transform:rotate(-20deg)}49%{transform:rotate(-55deg)}51%,100%{transform:rotate(0)}}
+/* traffic cone: gentle sway, big dance when a quotation is received */
+.cone{left:118px}
+.cone .sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 2.2s ease-in-out infinite}
+.cone.dance .sway{animation:dance .45s ease-in-out 7}
+.cone .note{opacity:0}
+.cone.dance .note{animation:note 1s ease-out 3}
+.cone.dance .note.n2{animation-delay:.35s}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes dance{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-12px) rotate(-14deg)}50%{transform:translateY(0) rotate(0) scaleY(.9)}75%{transform:translateY(-12px) rotate(14deg)}100%{transform:translateY(0) rotate(0)}}
+@keyframes note{0%{opacity:0;transform:translate(0,4px)}30%{opacity:1}100%{opacity:0;transform:translate(8px,-22px)}}
+/* crane: jib swings, sign sways */
+.crane{left:12px;bottom:6px}
+.crane .jib{transform-box:view-box;transform-origin:30px 14px;animation:jib 6s ease-in-out infinite}
+.crane .sign{transform-box:fill-box;transform-origin:50% 0;animation:signSw 2.4s ease-in-out infinite}
+@keyframes jib{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes signSw{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+/* coin sprite next to the progress bar (inline, never overlaps the counts) */
+html.toon:not(.noanim) .coin-sprite{display:inline-block;width:22px;height:22px;flex:none;animation:coinHop 1.6s ease-in-out infinite}
+.coin-sprite.jump{animation:coinJump .7s cubic-bezier(.3,1.6,.5,1) 2}
+@keyframes coinHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes coinJump{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-16px) rotate(180deg)}100%{transform:translateY(0) rotate(360deg)}}
+html.toon.noanim .toon-cloud,html.toon.noanim .toon-coin{animation:none}
+@media (prefers-reduced-motion:reduce){.toon-stage *,.coin-sprite{animation:none!important}}
+</style>
+
+<button class="anim-btn" id="animBtn" onclick="toggleAnim()" title="Turn the cartoon characters on or off"></button>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- original brick buddy -->
+  <symbol id="tBuddy" viewBox="0 0 64 70">
+    <g class="flip"><g class="bob">
+      <rect class="legA" x="20" y="54" width="8" height="12" rx="3" fill="#24203a"/>
+      <rect class="legB" x="36" y="54" width="8" height="12" rx="3" fill="#24203a"/>
+      <path d="M14 22 Q32 4 50 22 L52 26 H12 Z" fill="#ffd23f" stroke="#24203a" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="29" y="9" width="6" height="8" rx="2" fill="#ffd23f" stroke="#24203a" stroke-width="2.5"/>
+      <rect x="12" y="26" width="40" height="30" rx="7" fill="currentColor" stroke="#24203a" stroke-width="3"/>
+      <path d="M12 41 H52 M32 26 V41 M22 41 V56 M42 41 V56" stroke="#24203a" stroke-width="1.8" opacity=".3"/>
+      <ellipse cx="25" cy="35" rx="3.2" ry="4.2" fill="#24203a"/><ellipse cx="39" cy="35" rx="3.2" ry="4.2" fill="#24203a"/>
+      <circle cx="26" cy="33.5" r="1.1" fill="#fff"/><circle cx="40" cy="33.5" r="1.1" fill="#fff"/>
+      <path d="M26 44 Q32 49 38 44" fill="none" stroke="#24203a" stroke-width="2.6" stroke-linecap="round"/>
+      <circle cx="19" cy="42" r="2.6" fill="#ff7eb6" opacity=".8"/><circle cx="45" cy="42" r="2.6" fill="#ff7eb6" opacity=".8"/>
+    </g></g>
+  </symbol>
+</svg>
+
+<div class="toon-stage" id="toonStage" aria-hidden="true">
+  <!-- crane with "Quote ✓" sign -->
+  <div class="actor crane"><svg width="96" height="70" viewBox="0 0 96 70">
+    <rect x="24" y="12" width="10" height="56" fill="#ffd23f" stroke="#24203a" stroke-width="2.5"/>
+    <path d="M24 20 L34 30 M34 20 L24 30 M24 34 L34 44 M34 34 L24 44 M24 48 L34 58 M34 48 L24 58" stroke="#24203a" stroke-width="1.5"/>
+    <rect x="16" y="62" width="26" height="7" rx="2" fill="#6b6585" stroke="#24203a" stroke-width="2.5"/>
+    <g class="jib">
+      <rect x="6" y="9" width="86" height="7" fill="#ffd23f" stroke="#24203a" stroke-width="2.5"/>
+      <rect x="6" y="16" width="14" height="9" fill="#6b6585" stroke="#24203a" stroke-width="2"/>
+      <line x1="78" y1="16" x2="78" y2="30" stroke="#24203a" stroke-width="2"/>
+      <g class="sign"><rect x="56" y="30" width="44" height="18" rx="4" fill="#fff" stroke="#24203a" stroke-width="2.5"/>
+        <text x="78" y="43" text-anchor="middle" font-family="Fredoka,sans-serif" font-size="9.5" font-weight="700" fill="#1f9d55">Quote ✓</text></g>
+    </g>
+  </svg></div>
+
+  <!-- dancing traffic cone -->
+  <div class="actor cone" id="toonCone"><svg width="48" height="62" viewBox="0 0 48 62">
+    <g class="sway">
+      <path d="M24 4 L38 52 H10 Z" fill="#ff7a1a" stroke="#24203a" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M19.5 20 H28.5 L30.5 28 H17.5 Z M15.5 36 H32.5 L34 42 H14 Z" fill="#fff"/>
+      <rect x="4" y="50" width="40" height="8" rx="3" fill="#ff7a1a" stroke="#24203a" stroke-width="3"/>
+      <circle cx="21" cy="31" r="2" fill="#24203a"/><circle cx="27" cy="31" r="2" fill="#24203a"/>
+      <path d="M21 35.5 Q24 38 27 35.5" fill="none" stroke="#24203a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M13 34 L4 26 M35 34 L44 26" stroke="#24203a" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <text class="note" x="38" y="14" font-size="13">♪</text><text class="note n2" x="2" y="12" font-size="12">♫</text>
+  </svg></div>
+
+  <!-- brick buddy family -->
+  <div class="actor buddy-walk" style="--dur:24s;--delay:0s;color:#ff7a45"><svg width="44" height="48"><use href="#tBuddy"/></svg></div>
+  <div class="actor buddy-walk" style="--dur:24s;--delay:-1.2s;color:#3dd6b5"><svg width="36" height="40" style="margin-top:8px"><use href="#tBuddy"/></svg></div>
+  <div class="actor buddy-walk" style="--dur:31s;--delay:-14s;color:#8b5cf6"><svg width="40" height="44"><use href="#tBuddy"/></svg></div>
+
+  <!-- hard-hat penguin with clipboard -->
+  <div class="actor peng"><svg width="46" height="58" viewBox="0 0 46 58"><g class="flip"><g class="waddle">
+    <ellipse cx="17" cy="55" rx="6" ry="2.6" fill="#ff9f1c" stroke="#24203a" stroke-width="1.8"/>
+    <ellipse cx="29" cy="55" rx="6" ry="2.6" fill="#ff9f1c" stroke="#24203a" stroke-width="1.8"/>
+    <ellipse cx="23" cy="34" rx="15" ry="19" fill="#2b3a55" stroke="#24203a" stroke-width="3"/>
+    <ellipse cx="23" cy="38" rx="9.5" ry="13" fill="#fff"/>
+    <path d="M9 14 Q23 0 37 14 L38 17 H8 Z" fill="#ffd23f" stroke="#24203a" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="18.5" cy="24" r="2.2" fill="#fff"/><circle cx="27.5" cy="24" r="2.2" fill="#fff"/>
+    <circle cx="18.8" cy="24.3" r="1.2" fill="#24203a"/><circle cx="27.8" cy="24.3" r="1.2" fill="#24203a"/>
+    <path d="M20.5 28 L25.5 28 L23 31.5 Z" fill="#ff9f1c" stroke="#24203a" stroke-width="1.2"/>
+    <rect x="27" y="36" width="12" height="15" rx="2" fill="#c08a4a" stroke="#24203a" stroke-width="2"/>
+    <rect x="29" y="39" width="8" height="10" fill="#fff"/><path d="M30 42h6M30 45h6" stroke="#6b6585" stroke-width="1"/>
+    <path class="wave" d="M9 32 Q2 38 5 46" fill="none" stroke="#2b3a55" stroke-width="5" stroke-linecap="round"/>
+  </g></g></svg></div>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  try{ if(localStorage.getItem('subconhub_anim')==='off') root.classList.add('noanim'); }catch(e){}
+  function label(){ var b=document.getElementById('animBtn'); if(b) b.textContent = root.classList.contains('noanim') ? '✨ Animations: OFF' : '✨ Animations: ON'; }
+  window.toggleAnim=function(){ var off=root.classList.toggle('noanim'); try{localStorage.setItem('subconhub_anim',off?'off':'on')}catch(e){} label(); };
+  label();
+
+  // put the stage as the last strip of the main column, so it takes its own space below the cards/table
+  var main=document.querySelector('.app .main'), stage=document.getElementById('toonStage');
+  if(main && stage) main.appendChild(stage);
+
+  // coin sprite beside the progress bar
+  var pw=document.querySelector('.pw'), coin=null;
+  if(pw){
+    coin=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    coin.setAttribute('viewBox','0 0 22 22'); coin.setAttribute('class','coin-sprite'); coin.setAttribute('aria-hidden','true');
+    coin.innerHTML='<circle cx="11" cy="11" r="9" fill="#ffb703" stroke="#24203a" stroke-width="2.5"/><circle cx="8" cy="10" r="1.3" fill="#24203a"/><circle cx="14" cy="10" r="1.3" fill="#24203a"/><path d="M8 14 Q11 16.5 14 14" fill="none" stroke="#24203a" stroke-width="1.5" stroke-linecap="round"/>';
+    pw.insertBefore(coin, pw.firstChild);
+  }
+
+  // react to progress: cone dances when "quoted" goes up, coin jumps when "invited/contacted" goes up
+  var pbt=document.getElementById('pbt'), last=null;
+  function nums(t){ var q=/(\d+)\s*quoted/i.exec(t), i=/(\d+)\s*(invited|\/)/i.exec(t); return {q:q?+q[1]:null, i:i?+i[1]:null}; }
+  function replay(el,cls,ms){ if(!el) return; el.classList.remove(cls); void el.getBoundingClientRect(); el.classList.add(cls); setTimeout(function(){el.classList.remove(cls)},ms); }
+  if(pbt){
+    new MutationObserver(function(){
+      var n=nums(pbt.textContent||'');
+      if(last){
+        if(n.q!==null && last.q!==null && n.q>last.q) replay(document.getElementById('toonCone'),'dance',3400);
+        if(n.i!==null && last.i!==null && n.i>last.i) replay(coin,'jump',1500);
+      }
+      last=n;
+    }).observe(pbt,{childList:true,characterData:true,subtree:true});
+    last=nums(pbt.textContent||'');
+  }
+})();
 </script>
 </body>
 </html>
