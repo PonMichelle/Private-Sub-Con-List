@@ -664,7 +664,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-10-15</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-10-22</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -690,6 +690,7 @@ html.noanim .toon-scene *{animation:none!important}
         <button class="vb act" id="vbG" onclick="setView('grid')" title="Cards"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
         <button class="vb" id="vbT" onclick="setView('table')" title="Table"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></button>
         <div class="upill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input type="text" id="uname" placeholder="Your name" /></div>
+        <button class="btn" id="onlineBtn" onclick="toggleOnline(event)" title="See who is using the site right now">🟢 <span id="onlineN">1</span> online</button>
         <button class="btn" id="undoBtn" onclick="doUndo()" title="Undo the last status change (single or bulk)" style="opacity:.45" disabled>↶ Undo</button>
         <button class="btn" onclick="syncNow()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><polyline points="23,20 23,14 17,14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Sync</button>
         <button class="btn" onclick="exportCSV()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
@@ -1618,7 +1619,7 @@ function render(){
         <td class="${nfa?'nfa-name':''}" style="${nfa?'':namColor}"><input type="checkbox" class="selcb" ${emailSel.has(r.id)?'checked':''} onclick="toggleEmailSel(${r.id},this)" title="Select to email" style="vertical-align:middle;margin-right:7px" />${nfa?'✕ ':''}${r.company}${nfa?` <span style="font-size:10px;background:#ffe3ef;color:#c2185b;border:1px solid #f8b5d0;border-radius:6px;padding:1px 6px;vertical-align:middle;font-weight:600">Not for quote</span>`:noq?` <span style="font-size:10px;background:#fdeaea;color:#a02020;border:1px solid #f5a5a5;border-radius:6px;padding:1px 6px;vertical-align:middle;font-weight:400">✕ No quote</span>`:''}</td>
         <td style="font-size:11px;color:var(--tx2)">${r.trade}</td>
         <td>${r.contact||'—'}</td>
-        <td style="white-space:nowrap;font-size:11px">${ph||'—'}</td>
+        <td style="font-size:11px">${ph||'—'}</td>
         <td>${em||'—'}</td>
         <td style="font-size:10.5px;color:var(--tx3);font-style:italic;white-space:pre-wrap">${r.remark||''}</td>
         ${cbTd(inv,'invDate','#1a56a0',st.invDate||'')}
@@ -1641,24 +1642,30 @@ function setView(v){
   if(v==='table')setTimeout(initColResize,50);
 }
 // ── Resizable table columns (drag the right edge of a header) ────
+// Widths are saved by column NAME (prv_colw2) and start from sensible defaults,
+// never from the auto-measured width (that made Tel/HP/Remark/BCA columns huge and pushed Email far right).
+const COLW_DEF={'company':230,'trade':170,'contact':150,'tel/hp':140,'email':240,'remark':200,'notes':170,'bca grade':150,'quotation rcvd':120};
+function colKey(th){return th.textContent.replace(/\s+/g,' ').trim().toLowerCase();}
+function fitColTable(table){ let s=0; table.querySelectorAll('thead th').forEach(th=>{s+=parseFloat(th.style.width)||th.offsetWidth;}); table.style.width=s+'px'; } // table = exactly the sum of its columns, so no column gets stretched
+function colDefW(k){return COLW_DEF[k]||(/^add\.\d+$/.test(k)?100:110);}
 function saveColW(table){
-  try{const ths=[...table.querySelectorAll('thead th')];localStorage.setItem('prv_colw',JSON.stringify(ths.map(t=>t.offsetWidth)));}catch(e){}
+  try{const m={};table.querySelectorAll('thead th').forEach(th=>{m[colKey(th)]=th.offsetWidth;});localStorage.setItem('prv_colw2',JSON.stringify(m));}catch(e){}
 }
 function initColResize(){
   const tb=document.getElementById('tb');if(!tb)return;
   const table=tb.closest('table');if(!table)return;
   const ths=[...table.querySelectorAll('thead th')];
   if(!ths.length||ths[0].offsetWidth===0)return; // table not visible yet
-  let saved=null;try{saved=JSON.parse(localStorage.getItem('prv_colw'));}catch(e){}
-  ths.forEach((th,i)=>{ const w=(saved&&saved[i])?saved[i]:th.offsetWidth; th.style.width=w+'px'; });
-  table.style.tableLayout='fixed';
+  let saved=null;try{saved=JSON.parse(localStorage.getItem('prv_colw2'));}catch(e){}
+  ths.forEach(th=>{ const k=colKey(th); const w=(saved&&saved[k])?saved[k]:colDefW(k); th.style.width=w+'px'; });
+  table.style.tableLayout='fixed'; fitColTable(table);
   if(table._cr)return; table._cr=true; // wire handles only once
   ths.forEach(th=>{
     const h=document.createElement('div');h.className='cresize';th.appendChild(h);
     h.addEventListener('mousedown',e=>{
       e.preventDefault();e.stopPropagation();
       const startX=e.pageX,startW=th.offsetWidth;
-      function move(ev){th.style.width=Math.max(48,startW+ev.pageX-startX)+'px';}
+      function move(ev){th.style.width=Math.max(48,startW+ev.pageX-startX)+'px'; fitColTable(table);}
       function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);saveColW(table);}
       document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
     });
@@ -2294,6 +2301,56 @@ document.addEventListener('click',function(e){if(!e.target.closest('#epicker')&&
 
 try{const n=localStorage.getItem('prv_uname');if(n)document.getElementById('uname').value=n;}catch(e){}
 document.getElementById('uname').addEventListener('input',function(){try{localStorage.setItem('prv_uname',this.value);}catch(e){}});
+// ── Who's online (live presence; entries remove themselves when a tab closes) ──
+(function(){
+  const PFX='prv';
+  const tabId=Math.random().toString(36).slice(2,8);
+  let dev;try{dev=localStorage.getItem('subconhub_dev');if(!dev){dev=Math.random().toString(36).slice(2,10);localStorage.setItem('subconhub_dev',dev);}}catch(e){dev=tabId;}
+  const since=Date.now();
+  let me=null,online={},offset=0,lastSig='',tick=0;
+  function deviceName(){const u=navigator.userAgent;const os=/Windows/.test(u)?'Windows':/Android/.test(u)?'Android':/iPhone|iPad/.test(u)?'iPhone/iPad':/Mac/.test(u)?'Mac':/Linux/.test(u)?'Linux':'Unknown';const br=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Firefox\//.test(u)?'Firefox':/Safari\//.test(u)?'Safari':'Browser';return br+' on '+os;}
+  function info(){const n=document.getElementById('uname');return{name:((n&&n.value)||'').trim(),project:(typeof currentProject!=='undefined'&&currentProject)?currentProject.name:'',dev:dev,device:deviceName(),since:since};}
+  function push(){if(!me)return;const i=info();lastSig=i.name+'|'+i.project;i.seen=firebase.database.ServerValue.TIMESTAMP;me.update(i).catch(function(){});}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function list(){
+    const now=Date.now()+offset,byDev={};
+    Object.keys(online).forEach(function(k){const v=online[k];if(!v||!v.seen)return;if(now-v.seen>10*60*1000){if(now-v.seen>3600*1000&&typeof firebaseDB!=='undefined'&&firebaseDB)firebaseDB.ref(PFX+'/presence/'+k).remove().catch(function(){});return;}
+      const d=v.dev||k;if(!byDev[d]||byDev[d].seen<v.seen)byDev[d]=v;});
+    return Object.keys(byDev).map(function(d){return byDev[d];}).sort(function(a,b){return (a.since||0)-(b.since||0);});
+  }
+  function paint(){
+    const l=list(),n=document.getElementById('onlineN');if(n)n.textContent=l.length;
+    const pop=document.getElementById('onlinePop');if(!pop||pop.style.display==='none')return;
+    pop.innerHTML='<div class="op-h">Using the site right now ('+l.length+')</div>'+l.map(function(v){
+      const t=v.since?new Date(v.since).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'';
+      return '<div class="op-r"><div class="op-n">'+(v.name?esc(v.name):'<span class="op-w">⚠ No name entered</span>')+(v.dev===dev?' <span class="op-me">you</span>':'')+'</div><div class="op-s">'+esc(v.project||'No project open')+' · '+esc(v.device||'')+' · since '+esc(t)+'</div></div>';}).join('')
+      +'<div class="op-f">Shows people who have the latest version of the page open. Not recognised? Change the login passcode.</div>';
+  }
+  window.toggleOnline=function(ev){
+    if(ev)ev.stopPropagation();
+    const pop=document.getElementById('onlinePop'),b=document.getElementById('onlineBtn');if(!pop||!b)return;
+    if(pop.style.display==='block'){pop.style.display='none';return;}
+    const r=b.getBoundingClientRect();pop.style.top=(r.bottom+6)+'px';pop.style.right=Math.max(8,window.innerWidth-r.right)+'px';pop.style.display='block';paint();
+  };
+  document.addEventListener('click',function(e){const pop=document.getElementById('onlinePop');if(pop&&pop.style.display==='block'&&!e.target.closest('#onlinePop'))pop.style.display='none';});
+  const css=document.createElement('style');
+  css.textContent='#onlinePop{position:fixed;display:none;z-index:900;width:320px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;background:var(--sur,#fff);color:var(--tx,#222);border:1.5px solid var(--bdr2,#ccc);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.2);padding:10px 12px;font-size:12px}'
+   +'#onlinePop .op-h{font-weight:800;margin-bottom:6px}#onlinePop .op-r{padding:6px 0;border-top:1px solid var(--bdr,#eee)}#onlinePop .op-n{font-weight:700}#onlinePop .op-s{color:var(--tx3,#888);font-size:11px;margin-top:1px}'
+   +'#onlinePop .op-w{color:#b45309}#onlinePop .op-me{background:var(--bblue,#e8eeff);color:var(--blue,#3b5bdb);border-radius:8px;padding:0 6px;font-size:10px;font-weight:700}#onlinePop .op-f{margin-top:8px;padding-top:6px;border-top:1px solid var(--bdr,#eee);color:var(--tx3,#888);font-size:10.5px}';
+  document.head.appendChild(css);
+  const pop=document.createElement('div');pop.id='onlinePop';document.body.appendChild(pop);
+  function startPresence(n){ if(!(window.firebase&&firebase.database)){ if(n<80)setTimeout(function(){startPresence(n+1);},500); return; } // wait for the app's own Firebase load (avoids a load race)
+  initFirebase().then(function(db){
+    me=db.ref(PFX+'/presence/'+dev+'_'+tabId);
+    db.ref('.info/serverTimeOffset').on('value',function(s){offset=s.val()||0;});
+    db.ref('.info/connected').on('value',function(s){if(s.val()===true){me.onDisconnect().remove();push();}});
+    db.ref(PFX+'/presence').on('value',function(s){online=s.val()||{};paint();},function(){});
+    setInterval(function(){tick++;const i=info();if(i.name+'|'+i.project!==lastSig||tick%6===0)push();},10000);
+    const u=document.getElementById('uname');if(u)u.addEventListener('input',function(){clearTimeout(window._presT);window._presT=setTimeout(push,800);});
+  }).catch(function(){});}
+  startPresence(0);
+})();
+
 updateEmailLabel();
 
 // Poll for team changes every 20s
