@@ -710,7 +710,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-10-22f</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-10-22g</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -1552,11 +1552,21 @@ function linksRow(r){const w=siteUrl(r),t=trackUrl(r);const p=[];
   if(web)p.push(`<a href="${web.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="lnkpill" onclick="event.stopPropagation()" title="${w?'Open company website':'Search the web for this company'}">🌐 Website</a>`);
   if(t)p.push(`<a href="${t.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="lnkpill" onclick="event.stopPropagation()">📄 Track record</a>`);
   return p.length?`<div class="lnkrow">${p.join('')}</div>`:'';}
+// Only the first screenful of cards/rows is drawn; "Show more" adds the rest. Drawing all ~2,000 at once (~85,000 page elements) made the page freeze.
+const RENDER_STEP=60; let renderLimit=RENDER_STEP,_lastListSig='';
+function showMore(all){renderLimit=all?1e9:renderLimit+RENDER_STEP*2;render();}
+function moreBtns(moreN,total){return '<span style="font-size:12px;color:var(--tx2)">Showing '+(total-moreN)+' of '+total+'</span> <button class="btn" onclick="showMore()">Show '+Math.min(moreN,RENDER_STEP*2)+' more</button> <button class="btn" onclick="showMore(true)">Show all '+total+'</button>';}
+function moreBar(moreN,total){return moreN>0?'<div class="morebar" style="grid-column:1/-1;column-span:all;text-align:center;padding:14px 0">'+moreBtns(moreN,total)+'</div>':'';}
+function moreRow(moreN,total){return moreN>0?'<tr><td colspan="40" style="text-align:center;white-space:normal;padding:14px 0">'+moreBtns(moreN,total)+'</td></tr>':'';}
 function render(){
   upProg();
   buildCompanyIndex(); // rebuild once per render so sibling lookups stay O(1) instead of re-scanning all records per card
-  const list=getFilt();
-  document.getElementById('rc').textContent=`${list.length} result${list.length!==1?'s':''}`;
+  const listAll=getFilt();
+  const _sig=listAll.length+'|'+(listAll[0]?listAll[0].id:'');
+  if(_sig!==_lastListSig){renderLimit=RENDER_STEP;_lastListSig=_sig;} // new search/filter -> start from the first screenful again
+  const list=listAll.slice(0,renderLimit);
+  const moreN=listAll.length-list.length;
+  document.getElementById('rc').textContent=`${listAll.length} result${listAll.length!==1?'s':''}`;
   try{updateSelAllBtn();updateColChecks();}catch(e){}
   if(view==='grid'){
     if(!list.length){document.getElementById('cg').innerHTML=`<div class="empty"><div style="font-size:32px;margin-bottom:10px">🔍</div><div style="font-size:13px;color:var(--tx2)">No subcontractors found</div></div>`;return;}
@@ -1635,7 +1645,7 @@ function render(){
           ${siblingTradesHtml(r)}
         </div>
       </div>`;
-    }).join('');
+    }).join('')+moreBar(moreN,listAll.length);
   }else{
     if(!list.length){document.getElementById('tb').innerHTML=`<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--tx3)">No results</td></tr>`;return;}
     document.getElementById('tb').innerHTML=list.map(r=>{
@@ -1675,7 +1685,7 @@ function render(){
         <td><textarea class="ni" style="width:140px;margin:0;resize:vertical" placeholder="Notes..." oninput="uf(${r.id},'note',this.value)" rows="2">${(st.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</textarea></td>
         <td>${getGrade(r)?`<span class="gradechip" style="margin:0" title="${gradeBreakdown(getGrade(r))}" onclick="showGradePop(event,'${getGrade(r).replace(/'/g,"\\'")}',${r.id})">${getGrade(r)}${gradeWarnIcon(r)}</span>`:`<span class="gradechip" style="margin:0;opacity:.5;background:var(--sur2);border-style:dashed" onclick="showGradePop(event,'',${r.id})">+ Add</span>`}</td>
       </tr>`;
-    }).join('');
+    }).join('')+moreRow(moreN,listAll.length);
   }
 }
 function setView(v){
