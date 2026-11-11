@@ -716,7 +716,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-11a</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-11b</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -806,6 +806,7 @@ html.noanim .toon-scene *{animation:none!important}
 <div class="toast" id="toast"></div>
 <div class="epicker" id="epicker">
   <div class="epicker-title">Open email with</div>
+  <div class="epicker-item" id="epThread" style="display:none" onclick="pickClient('gmailthread')"><img src="https://www.google.com/favicon.ico" alt=""/>Gmail — reply in earlier thread (draft)</div>
   <div class="epicker-item" onclick="pickClient('gmail')"><img src="https://www.google.com/favicon.ico" alt=""/>Gmail</div>
   <div class="epicker-item" onclick="pickClient('yahoo')"><img src="https://www.yahoo.com/favicon.ico" alt=""/>Yahoo Mail</div>
   <div class="epicker-item" onclick="pickClient('hotmail')"><img src="https://outlook.live.com/favicon.ico" alt=""/>Outlook / Hotmail</div>
@@ -2125,6 +2126,7 @@ function openEmail(idOrEmails,event){
 function showPicker(event){
   const p=document.getElementById('epicker');
   document.getElementById('epdefchk').checked=false;
+  const et=document.getElementById('epThread');if(et)et.style.display=(isMailOwner()&&mailClientId(false))?'':'none';
   const x=Math.min(event.clientX,window.innerWidth-225);
   const y=Math.min(event.clientY+6,window.innerHeight-250);
   p.style.left=x+'px';p.style.top=y+'px';
@@ -2323,6 +2325,7 @@ function openWithClient(emails,client){
 // Batch: show a list where each company has its own Open button.
 let _batchItems=[],_batchClient='system';
 function showBatchModal(items,client){
+  if(client==='gmailthread'&&!(isMailOwner()&&mailClientId(false)))client='gmail'; // thread replies are owner-only
   _batchItems=items;_batchClient=client;
   let ov=document.getElementById('batchOv');
   if(!ov){
@@ -2360,9 +2363,9 @@ function showBatchModal(items,client){
   }
   _tpls=getTpls();if(_tplIdx>=_tpls.length)_tplIdx=0;
   document.getElementById('tplSel').innerHTML=tplOptions();loadTplInto();
-  const cl={gmail:'Gmail',yahoo:'Yahoo Mail',hotmail:'Outlook',system:'your mail app'}[client]||client;
-  document.getElementById('batchTitle').textContent=`Send ${items.length} email${items.length>1?'s':''}`;
-  document.getElementById('batchSub').textContent=(client==='system')?`Click each ✉ Open below — ${cl} opens one compose window per click. (One-click "Open all" isn't possible with a desktop mail app.)`:`Click each ✉ Open, or use "Open all" to open all in ${cl}.`;
+  const cl={gmail:'Gmail',gmailthread:'Gmail',yahoo:'Yahoo Mail',hotmail:'Outlook',system:'your mail app'}[client]||client;
+  document.getElementById('batchTitle').textContent=(client==='gmailthread')?`Reply in earlier thread — ${items.length} draft${items.length>1?'s':''}`:`Send ${items.length} email${items.length>1?'s':''}`;
+  document.getElementById('batchSub').textContent=(client==='gmailthread')?'Each ✉ Open (or Open all) saves a Gmail DRAFT as a reply in your earlier email thread with that subcontractor for this project. Nothing is sent — check each draft in Gmail and press Send. The subject stays the same as the earlier thread; if no earlier email is found, a new draft is made.':(client==='system')?`Click each ✉ Open below — ${cl} opens one compose window per click. (One-click "Open all" isn't possible with a desktop mail app.)`:`Click each ✉ Open, or use "Open all" to open all in ${cl}.`;
   const oab=document.getElementById('openAllBtn');if(oab)oab.style.display=(client==='system')?'none':'';
   document.getElementById('batchList').innerHTML=items.map((it,i)=>`<div class="batchrow" id="brow${i}"><span class="bname" title="${(it.emails||'').replace(/"/g,'&quot;')}">${it.company}</span><button class="btn" style="padding:5px 9px;font-size:12px" onclick="copyOneBatch(${i})" title="Copy this email to paste into your mail">📋</button><button class="btn btn-open" onclick="openOneBatch(${i})">✉ Open</button></div>`).join('');
   loadFullTitle();loadDocLinks();loadAlwaysCc();loadAlwaysBcc();loadSignature();
@@ -2370,6 +2373,7 @@ function showBatchModal(items,client){
 }
 function openOneBatch(i){
   const it=_batchItems[i];if(!it)return true;
+  if(_batchClient==='gmailthread'){const tab=window.open('about:blank','_blank');draftOneBatch(i,tab);return true;}
   const cur=_tpls[_tplIdx]||{subject:'',body:''};
   const tpl={subject:document.getElementById('tplSubj')?document.getElementById('tplSubj').value:cur.subject,body:document.getElementById('tplBody')?document.getElementById('tplBody').value:cur.body};
   const subj=fillTpl(tpl.subject,it),body=withSignature(bodyWithLinks(fillTpl(tpl.body,it,true)));
@@ -2391,6 +2395,7 @@ function copyOneBatch(i){
   const r=document.getElementById('brow'+i);if(r)r.classList.add('bdone');
 }
 function openAllBatch(){
+  if(_batchClient==='gmailthread'){draftAllBatch();return;}
   if(_batchClient==='system'){ // desktop app: can't batch — stagger as best-effort
     _batchItems.forEach((it,i)=>setTimeout(()=>openOneBatch(i), i*900));
     return;
@@ -2518,7 +2523,7 @@ function emailSelectedSend(event){
 }
 function closeEPicker(){document.getElementById('epicker').classList.remove('open');}
 function resetEmailDefault(){localStorage.removeItem('prv_email_client');updateEmailLabel();toast('Email default cleared - choose next time');}
-const CLIENT_LABELS={gmail:'Gmail',yahoo:'Yahoo',hotmail:'Outlook',system:'System'};
+const CLIENT_LABELS={gmail:'Gmail',gmailthread:'Gmail reply',yahoo:'Yahoo',hotmail:'Outlook',system:'System'};
 function updateEmailLabel(){const d=localStorage.getItem('prv_email_client');const el=document.getElementById('emailDefLabel');if(el)el.textContent=d?CLIENT_LABELS[d]||'Email':'Email';}
 document.addEventListener('click',function(e){if(!e.target.closest('#epicker')&&!e.target.closest('.demail')&&!e.target.closest('.tde'))closeEPicker();});
 
@@ -2880,25 +2885,30 @@ function mailClientId(ask){
   id=v.trim();try{localStorage.setItem('gmail_client_id',id);}catch(e){}
   return id;
 }
-let _gTok=null,_gTokExp=0;
-async function gmailToken(interactive){
-  if(_gTok&&Date.now()<_gTokExp-60000)return _gTok;
+// Two kinds of Google permission: read-only (Check mail) and read + create drafts (reply in same thread).
+let _gToks={};
+async function gmailToken(interactive,compose){
+  const ck=compose?'c':'r',cur=_gToks[ck];
+  if(cur&&Date.now()<cur.exp-60000)return cur.tok;
   const cid=mailClientId(interactive);
   if(!cid)throw new Error(interactive?'No client ID entered':'no-client-id');
   await loadScript('https://accounts.google.com/gsi/client');
   return new Promise((res,rej)=>{
     const tc=google.accounts.oauth2.initTokenClient({
-      client_id:cid,scope:'https://www.googleapis.com/auth/gmail.readonly',
+      client_id:cid,scope:'https://www.googleapis.com/auth/gmail.readonly'+(compose?' https://www.googleapis.com/auth/gmail.compose':''),
       hint:(firebase.auth().currentUser||{}).email||'',
-      callback:r=>{if(r&&r.access_token){_gTok=r.access_token;_gTokExp=Date.now()+(+r.expires_in||3600)*1000;res(_gTok);}else rej(new Error((r&&(r.error_description||r.error))||'not allowed'));},
+      callback:r=>{if(r&&r.access_token){_gToks[ck]={tok:r.access_token,exp:Date.now()+(+r.expires_in||3600)*1000};res(r.access_token);}else rej(new Error((r&&(r.error_description||r.error))||'not allowed'));},
       error_callback:e=>rej(new Error((e&&(e.message||e.type))||'sign-in window closed'))
     });
     tc.requestAccessToken({prompt:interactive?'':'none'});
   });
 }
-async function gmailApi(path,tok){
-  const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/'+path,{headers:{Authorization:'Bearer '+tok}});
-  if(r.status===401){_gTok=null;throw new Error('Gmail sign-in expired');}
+async function gmailApi(path,tok,body){
+  const opt={headers:{Authorization:'Bearer '+tok}};
+  if(body){opt.method='POST';opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body);}
+  const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/'+path,opt);
+  if(r.status===401){_gToks={};throw new Error('Gmail sign-in expired');}
+  if(r.status===403)throw new Error('Gmail refused (403) — is "gmail.compose" added under Data Access, and the Gmail API enabled?');
   if(!r.ok)throw new Error('Gmail said '+r.status);
   return r.json();
 }
@@ -2982,8 +2992,101 @@ function showMailPanel(ticks,info){
 }
 function mailShow(id){const r=records.find(x=>x.id===+id);const q=document.getElementById('mq');if(r&&q){q.value=r.company;}const p=document.getElementById('mailPanel');if(p)p.remove();render();}
 function mailDismiss(id){delete mailFlags[id];saveMailFlags();render();showMailPanel();}
+// ── Reply in the same Gmail thread (owner only) ──────────────────────
+// For the "Gmail — reply in same thread" choice: finds the earlier email YOU sent to this subcontractor for this
+// project (subject has the project title; trade used to tell trades apart) and creates a DRAFT that is a reply in
+// that thread. Nothing is sent — the draft waits in Gmail Drafts for you to check and press Send.
+function mailB64(str){const b=new TextEncoder().encode(str);let s='';for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+function mailHdr(v){return String(v||'').replace(/[\r\n]+/g,' ').trim();}
+function mailEncSubj(s){s=mailHdr(s);return /^[\x20-\x7e]*$/.test(s)?s:'=?UTF-8?B?'+mailB64(s)+'?=';}
+function mailBuildRaw(m){
+  const h=['MIME-Version: 1.0'];
+  if(m.to)h.push('To: '+mailHdr(m.to));
+  if(m.cc)h.push('Cc: '+mailHdr(m.cc));
+  if(m.bcc)h.push('Bcc: '+mailHdr(m.bcc));
+  h.push('Subject: '+mailEncSubj(m.subject));
+  if(m.inReplyTo){h.push('In-Reply-To: '+mailHdr(m.inReplyTo));h.push('References: '+mailHdr(((m.references||'')+' '+m.inReplyTo).trim()));}
+  h.push('Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64');
+  const body=mailB64(String(m.body||'').replace(/\r?\n/g,'\r\n')).replace(/(.{76})/g,'$1\r\n');
+  return mailB64(h.join('\r\n')+'\r\n\r\n'+body).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+// cands: [{threadId,subject}] newest first. siblings = how many records share this email (several trades?)
+function mailPickThread(cands,trade,siblings){
+  if(!cands||!cands.length)return null;
+  const t=mailNorm(trade);
+  if(t){const m=cands.filter(c=>mailNorm(c.subject).indexOf(t)>=0);if(m.length)return m[0];}
+  return siblings<=1?cands[0]:null; // several trades and the subject doesn't say which: don't guess
+}
+async function gmailFindThread(it,tok){
+  const ems=mailEmails(it.emails);if(!ems.length||!currentProject)return null;
+  const q='in:sent to:('+ems.join(' OR ')+') subject:("'+String(currentProject.name).replace(/["\\]/g,' ')+'")';
+  const j=await gmailApi('messages?maxResults=10&q='+encodeURIComponent(q),tok);
+  const cands=[],seen=new Set();
+  for(const x of (j.messages||[])){
+    if(seen.has(x.threadId))continue;seen.add(x.threadId);
+    const m=await gmailApi('messages/'+x.id+'?format=metadata&metadataHeaders=Subject',tok);
+    const sh=((m.payload&&m.payload.headers)||[]).find(h=>h.name.toLowerCase()==='subject');
+    cands.push({threadId:x.threadId,subject:sh?sh.value:''});
+  }
+  const sib=records.filter(r=>mailEmails(r.email).some(e=>ems.indexOf(e)>=0)).length;
+  const pick=mailPickThread(cands,it.trade,sib);if(!pick)return null;
+  const t=await gmailApi('threads/'+pick.threadId+'?format=metadata&metadataHeaders=Message-ID&metadataHeaders=References&metadataHeaders=Subject',tok);
+  const msgs=t.messages||[];if(!msgs.length)return null;
+  const hv=(m,n)=>{const h=((m.payload&&m.payload.headers)||[]).find(x=>x.name.toLowerCase()===n);return h?h.value:'';};
+  const last=msgs[msgs.length-1];
+  return {threadId:pick.threadId,subject:hv(msgs[0],'subject')||pick.subject,lastId:hv(last,'message-id'),refs:hv(last,'references')};
+}
+async function gmailMakeDraft(it,tok){
+  const cur=_tpls[_tplIdx]||{subject:'',body:''};
+  const sEl=document.getElementById('tplSubj'),bEl=document.getElementById('tplBody');
+  const tplSubj=fillTpl(sEl?sEl.value:cur.subject,it);
+  const body=withSignature(bodyWithLinks(fillTpl(bEl?bEl.value:cur.body,it,true)));
+  const sp=addAlwaysCc(splitToCc(it.emails,it.contact,it.roles));
+  const th=await gmailFindThread(it,tok);
+  const raw=mailBuildRaw({to:sp.to,cc:sp.cc,bcc:alwaysBccFor(sp),
+    subject:th?('Re: '+th.subject.replace(/^\s*((re|fw|fwd)\s*:\s*)+/i,'')):tplSubj,
+    body,inReplyTo:th&&th.lastId,references:th&&th.refs});
+  const msg={raw};if(th)msg.threadId=th.threadId;
+  const d=await gmailApi('drafts',tok,{message:msg});
+  return {kind:th?'reply':'new',id:d.message&&d.message.id};
+}
+function gmailDraftUrl(id){
+  let me='';try{me=firebase.auth().currentUser.email||'';}catch(e){}
+  return 'https://mail.google.com/mail/'+(me?'?authuser='+encodeURIComponent(me):'')+'#drafts'+(id?'?compose='+id:'');
+}
+function batchNote(row,t){if(!row)return;const o=row.querySelector('.bnote');if(o)o.remove();const s=document.createElement('span');s.className='bnote';s.style.cssText='font-size:11px;color:var(--tx3);margin-left:8px';s.textContent=t;row.appendChild(s);}
+async function draftOneBatch(i,tab){
+  const it=_batchItems[i];if(!it)return null;
+  const row=document.getElementById('brow'+i);
+  try{
+    batchNote(row,'working…');
+    const tok=await gmailToken(true,true);
+    const r=await gmailMakeDraft(it,tok);
+    if(row){row.classList.add('bdone');row.classList.remove('bblocked');}
+    batchNote(row,r.kind==='reply'?'↩ draft saved as reply in earlier thread':'draft saved (no earlier email found — new email)');
+    if(tab){try{tab.location.href=gmailDraftUrl(r.id);}catch(e){}}
+    return r;
+  }catch(e){
+    if(row){row.classList.add('bblocked');row.classList.remove('bdone');}
+    batchNote(row,'failed');
+    toast('Draft failed: '+((e&&e.message)||e));
+    if(tab){try{tab.close();}catch(x){}}
+    return null;
+  }
+}
+async function draftAllBatch(){
+  const btn=document.getElementById('openAllBtn');if(btn)btn.disabled=true;
+  const tab=window.open('about:blank','_blank'); // opened now (a click) so the browser allows it; sent to Drafts at the end
+  let nr=0,nn=0,nf=0;
+  try{await gmailToken(true,true);}catch(e){toast('Gmail permission failed: '+((e&&e.message)||e));if(tab)try{tab.close();}catch(x){}if(btn)btn.disabled=false;return;}
+  for(let i=0;i<_batchItems.length;i++){const r=await draftOneBatch(i,null);if(!r)nf++;else if(r.kind==='reply')nr++;else nn++;}
+  toast(nr+' reply draft'+(nr===1?'':'s')+(nn?', '+nn+' new':'')+(nf?', '+nf+' failed':'')+' — check them in Gmail Drafts');
+  if(tab){if(nr+nn>0){try{tab.location.href=gmailDraftUrl();}catch(e){}}else{try{tab.close();}catch(x){}}}
+  if(btn)btn.disabled=false;
+}
 // Runs by itself (quietly) while the owner has the page open, if Gmail was allowed before
 function mailAutoStart(){
+  if(isMailOwner()){loadScript('https://accounts.google.com/gsi/client').catch(function(){});} // preload so the Google window opens straight from a click
   if(!isMailOwner()||!mailClientId(false))return;
   setTimeout(()=>checkMail(false),4000);
   if(!window._mailTimer)window._mailTimer=setInterval(()=>{if(!document.hidden)checkMail(false);},10*60*1000);
