@@ -716,7 +716,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-17c</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-17d</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -3181,7 +3181,9 @@ function mailBuildRaw(m){
   return mailB64(h.join('\r\n')+'\r\n\r\n'+body).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
 function mailEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function mailTextToHtml(t){return mailEsc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1">$1</a>').replace(/\r?\n/g,'<br>');}
+// Links keep their full address as the visible text. A zero-width space after "https://" stops Gmail turning a
+// Drive / SharePoint link into a "smart chip" that shows only the folder or file name; the href stays the full link.
+function mailTextToHtml(t){return mailEsc(t).replace(/(https?:\/\/)([^\s<]+)/g,'<a href="$1$2">$1​$2</a>').replace(/\r?\n/g,'<br>');}
 function mailDecB64(d){try{const s=atob(String(d).replace(/-/g,'+').replace(/_/g,'/'));const b=new Uint8Array(s.length);for(let i=0;i<s.length;i++)b[i]=s.charCodeAt(i);return new TextDecoder('utf-8').decode(b);}catch(e){return '';}}
 // finds the html body and the inline pictures (Content-ID) of a Gmail message payload
 function mailPayloadParts(p){
