@@ -716,7 +716,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-17d</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-18a</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -2966,6 +2966,7 @@ function saveThreadMap(t){try{const k=Object.keys(t);if(k.length>1500)k.slice(0,
 let mailFlags={},_mailBusy=false;
 function mfKey(){return 'mf_'+MY_PFX+'_'+(currentProject?currentProject.id:'');}
 function mpKey(){return 'mp2_'+MY_PFX+'_'+(currentProject?currentProject.id:'');}
+function mlKey(){return 'ml_'+MY_PFX+'_'+(currentProject?currentProject.id:'');}
 function loadMailFlags(){try{mailFlags=JSON.parse(localStorage.getItem(mfKey())||'{}')||{};}catch(e){mailFlags={};}loadMailChanges();}
 function saveMailFlags(){try{localStorage.setItem(mfKey(),JSON.stringify(mailFlags));}catch(e){}}
 function mailFlagHtml(id){
@@ -3040,7 +3041,7 @@ async function checkMail(interactive){
   try{
     if(interactive)toast('Checking your Gmail…');
     const tok=await gmailToken(interactive);
-    let days=21;try{const last=+localStorage.getItem('mlast2_'+MY_PFX+'_'+currentProject.id);if(last)days=Math.min(60,Math.max(3,Math.ceil((Date.now()-last)/864e5)+2));}catch(e){}
+    let days=21;try{const last=+localStorage.getItem('mlast3_'+MY_PFX+'_'+currentProject.id);if(last)days=Math.min(60,Math.max(3,Math.ceil((Date.now()-last)/864e5)+2));}catch(e){}
     const after=Math.floor((Date.now()-days*864e5)/1000);
     const [inbox,sent]=await Promise.all([
       gmailFetch('after:'+after+' -from:me -in:sent -in:drafts -in:trash -in:spam',tok,300),
@@ -3060,16 +3061,22 @@ async function checkMail(interactive){
     const rIn=mailMatch(fresh(inbox).sort((a,b)=>a.date<b.date?-1:1),ctx,'in');
     // learn contact details (new email, new name, new phone) from replies we are sure about; changes are logged for confirmation
     let nChanged=0;
-    for(const L of rIn.learn.slice(0,15)){
+    // learning has its own "already read" list: a reply that was ticked (or flagged) is still read for new details,
+    // and mail beyond the per-run cap is picked up on the next check instead of being skipped for good
+    let doneL={};try{doneL=JSON.parse(localStorage.getItem(mlKey())||'{}')||{};}catch(e){}
+    const rLearn=mailMatch(inbox.filter(m=>!doneL[m.id]).sort((a,b)=>a.date<b.date?-1:1),ctx,'in');
+    for(const L of rLearn.learn.slice(0,40)){
       const rec=records.find(x=>x.id===L.id);if(!rec)continue;
-      let body='';try{const full=await gmailApi('messages/'+L.msg.id+'?format=full',tok);body=mailBodyText(full.payload);}catch(e){}
+      let body='',got=false;try{const full=await gmailApi('messages/'+L.msg.id+'?format=full',tok);body=mailBodyText(full.payload);got=true;}catch(e){}
+      if(!got)continue;
       const ch=mailLearn(L.msg,rec,body,ctx.me);
       ch.forEach(c=>{
         rec[c.field]=c.new;nChanged++;
         mailChanges.push({key:L.msg.id+'|'+L.id+'|'+c.field,id:L.id,field:c.field,old:c.old,new:c.new,from:L.msg.from,subject:L.msg.subject,date:L.msg.date,msgId:L.msg.id});
       });
-      done[L.msg.id]=1;
+      doneL[L.msg.id]=1;
     }
+    try{const ks=Object.keys(doneL);if(ks.length>1500)ks.slice(0,ks.length-1500).forEach(k=>delete doneL[k]);localStorage.setItem(mlKey(),JSON.stringify(doneL));}catch(e){}
     if(nChanged){saveMailChanges();saveRecords();}
     if(rIn.ticks.length){if(!ticks.length)pushUndo();rIn.ticks.forEach(t=>{const s=statusMap[t.id]||{};if(!s[t.field]){statusMap[t.id]={...s,[t.field]:t.date};ticks.push(t);}});}
     // flags (kept until the row gets its quotation ticked or the owner dismisses it)
@@ -3077,7 +3084,7 @@ async function checkMail(interactive){
     Object.keys(mailFlags).forEach(id=>{const s=statusMap[id]||{};if(s.qrcDate||s.noqDate)delete mailFlags[id];});
     saveMailFlags();
     [].concat(ticks,rIn.flags).forEach(x=>{done[x.msgId]=1;});
-    try{localStorage.setItem(mpKey(),JSON.stringify(done));localStorage.setItem('mlast2_'+MY_PFX+'_'+currentProject.id,String(Date.now()));}catch(e){}
+    try{localStorage.setItem(mpKey(),JSON.stringify(done));localStorage.setItem('mlast3_'+MY_PFX+'_'+currentProject.id,String(Date.now()));}catch(e){}
     if(ticks.length){saveStatus();}
     render();
     const nFlag=Object.keys(mailFlags).length;
