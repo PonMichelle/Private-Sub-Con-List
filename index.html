@@ -716,7 +716,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-20a</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-20c</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -3105,10 +3105,14 @@ async function gmailFetch(q,tok,cap){
   }
   return out;
 }
+let _mailShowWhenDone=false;
 async function checkMail(interactive){
-  if(_mailBusy)return;
+  // A quiet check also runs by itself (4 seconds after the page opens, then every 10 minutes). If you press the button while
+  // it is running, your click used to be ignored with no message — you had to press again. Now the result opens when it finishes.
+  if(_mailBusy){if(interactive){_mailShowWhenDone=true;toast('A mail check is already running — the result will open here when it finishes…');}return;}
   if(!currentProject){if(interactive)toast('Open a project first');return;}
-  _mailBusy=true;const btn=document.getElementById('mailBtn');if(btn)btn.disabled=true;
+  _mailBusy=true;const btn=document.getElementById('mailBtn'),btnHtml0=btn?btn.innerHTML:'';if(btn){btn.disabled=true;btn.textContent='✉ Checking…';}
+  let retryLoud=false;
   try{
     if(interactive)toast('Checking your Gmail…');
     const tok=await gmailToken(interactive);
@@ -3185,18 +3189,26 @@ async function checkMail(interactive){
       const asDecline=(id,date,msgId,subject,said)=>{
         rIn.ticks.push({id,field:'noqDate',date,msgId,subject,said});
       };
-      for(const f of rIn.flags.filter(x=>x.kind==='decline')){
+      // Flags raised on an EARLIER check count too. A message is only read
+      // once - after that it is on the "already seen" list and never reaches
+      // the matcher again - so a decline flagged before this was built would
+      // have sat there for ever, which is exactly what happened.
+      const isDecline=f=>f.kind==='decline'||/“no quote”|decline — please read/i.test(f.why||'');
+      const older=Object.keys(mailFlags).map(id=>mailFlags[id])
+        .filter(f=>f&&f.msgId&&isDecline(f)&&!rIn.flags.some(n=>n.msgId===f.msgId&&n.id===f.id));
+      for(const f of rIn.flags.filter(isDecline).concat(older)){
         const own=await bodyOf(f.msgId);
         if(!own||!own.trim())continue;            // could not read it — leave the flag
         if(MAIL_DECLINE_SURE.test(own)){
           asDecline(f.id,f.date,f.msgId,f.subject,(own.match(MAIL_DECLINE_SURE)||[''])[0]);
-        }else{
+        }else if((statusMap[f.id]||{}).invDate){
           // read in full it is NOT a refusal - "we regret the delay in
           // replying" on a mail that encloses a price - so it gets the
           // Quotation received tick the suspicion was holding back
           rIn.ticks.push({id:f.id,field:'qrcDate',date:f.date,msgId:f.msgId,subject:f.subject});
-        }
+        }else continue;                           // not invited here — leave it to her
         rIn.flags=rIn.flags.filter(x=>x!==f);
+        delete mailFlags[f.id];
       }
       for(const t of rIn.ticks.filter(x=>x.field==='qrcDate').slice()){
         const own=await bodyOf(t.msgId);
@@ -3227,13 +3239,17 @@ async function checkMail(interactive){
     if(ticks.length){saveStatus();}
     render();
     const nFlag=Object.keys(mailFlags).length;
-    if(interactive)showMailPanel(ticks,{scanned:inbox.length+sent.length,days});
-    if(!interactive&&(ticks.length||nFlag||nChanged))toast('Mail check: ticked '+ticks.length+(nChanged?', updated '+nChanged+' contact detail'+(nChanged>1?'s':'')+' ✎':'')+(nFlag?', '+nFlag+' to check ✉':''));
+    const wantPanel=interactive||_mailShowWhenDone;_mailShowWhenDone=false;
+    if(wantPanel)showMailPanel(ticks,{scanned:inbox.length+sent.length,days});
+    if(!wantPanel&&(ticks.length||nFlag||nChanged))toast('Mail check: ticked '+ticks.length+(nChanged?', updated '+nChanged+' contact detail'+(nChanged>1?'s':'')+' ✎':'')+(nFlag?', '+nFlag+' to check ✉':''));
   }catch(e){
     console.warn('mail check:',e&&e.message||e);
     if(interactive)toast('Mail check failed: '+((e&&e.message)||e));
+    else if(_mailShowWhenDone){retryLoud=true;} // the quiet check could not get Google's permission; run it again as a real click-check below
+    _mailShowWhenDone=false;
   }
-  _mailBusy=false;if(btn)btn.disabled=false;
+  _mailBusy=false;if(btn){btn.disabled=false;btn.innerHTML=btnHtml0||'✉ Check mail';}
+  if(retryLoud)checkMail(true);
 }
 function recLabel(id){const r=records.find(x=>x.id===+id);return r?(r.company+' — '+r.trade):('#'+id);}
 function showMailPanel(ticks,info){
