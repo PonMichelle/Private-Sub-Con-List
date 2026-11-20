@@ -102,8 +102,32 @@ a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .ti{padding:7px 14px;cursor:pointer;font-size:12px;color:var(--tx2);display:flex;justify-content:space-between;align-items:center;border-left:2px solid transparent;gap:4px}
 .ti:hover{background:var(--sur2);color:var(--tx)}
 .ti.act{background:var(--bblue);color:var(--blue);border-left-color:var(--blue);font-weight:500}
+/* the little "move this trade to another main group" menu */
+.tgmenu{position:fixed;z-index:9999;background:var(--sur,#fff);border:1px solid var(--bdr2,#d7dbe3);border-radius:8px;box-shadow:0 8px 28px rgba(15,23,42,.18);min-width:220px;overflow:hidden;font-size:12px}
+.tgmh{padding:7px 11px;background:var(--sur2,#f6f7fb);color:var(--tx3,#888);font-size:11px;border-bottom:1px solid var(--bdr,#eee);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tgmi{padding:8px 11px;cursor:pointer;color:var(--tx,#222);white-space:nowrap}
+.tgmi:hover{background:var(--bblue,#eef1ff);color:var(--blue,#2b5bd7)}
+.tgmi.on{font-weight:700;color:var(--blue,#2b5bd7)}
+/* main groups in the trade list — the same groups the Excel export uses */
+.ti.sbgrp{font-weight:700;color:var(--tx);background:var(--sur2);text-transform:uppercase;font-size:11px;letter-spacing:.3px;padding-left:8px;position:sticky;top:0;z-index:1}
+.ti.sbgrp .tc{font-weight:700}
+.sbcar{flex-shrink:0;width:13px;text-align:center;color:var(--tx3);font-size:10px;cursor:pointer}
+.sbcar:hover{color:var(--blue)}
+.ti.sbsub{padding-left:26px}
+/* a main group must not look like a trade: dark bold band for the group, lighter indented rows (with a guide line) for its trades.
+   html.toon … is written out because the cartoon theme styles every .ti and would otherwise win */
+html .ti.sbgrp,html.toon .ti.sbgrp{font-weight:800;font-size:12px;letter-spacing:.6px;background:var(--ink,#2a3354);color:#fff;border-left-color:transparent;margin-top:10px;padding-top:9px;padding-bottom:9px}
+html .ti.sbgrp .tc,html.toon .ti.sbgrp .tc{background:#fff;color:#24203a;border-color:#fff;font-weight:800}
+html .ti.sbgrp .sbcar,html .ti.sbgrp .sbcar:hover{color:#fff;font-size:12px}
+html .ti.sbgrp.act,html.toon .ti.sbgrp.act{background:var(--t-accent,#cfe0ff);color:#24203a;border-color:var(--ink,#2a3354)}
+html .ti.sbgrp.act .sbcar{color:#24203a}
+html .ti.sbgrp:hover .tn,html .ti.sbsub:hover .tn{transform:none}
+html .ti.sbsub,html.toon .ti.sbsub{font-weight:400;font-size:11.5px;margin-left:16px;padding-left:12px;border-left:3px solid #c9c5dc;border-radius:0 8px 8px 0}
+html.toon .ti.sbsub.act,html .ti.sbsub.act{font-weight:700;border-left-color:var(--ink,#2a3354)}
+.ti.sbsub[draggable=true]{cursor:grab}
+html .ti.sbdrop,html.toon .ti.sbdrop{outline:3px dashed #ff8a00;outline-offset:-3px;background:#fff3d6;color:#24203a}
 .tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.trename{opacity:0;font-size:12px;color:var(--tx3);cursor:pointer;padding:0 4px;flex-shrink:0}
+.trename{opacity:0;font-size:12px;color:var(--tx3);cursor:pointer;padding:0 3px;flex-shrink:0}
 .ti:hover .trename{opacity:.85}
 .trename:hover{color:var(--blue)}
 .tc{font-size:10px;background:var(--bg);border-radius:8px;padding:1px 6px;color:var(--tx3);flex-shrink:0}
@@ -716,7 +740,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-20c</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-20i</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -1289,6 +1313,9 @@ async function loadAll(){
   renderSB();render();
   try{updateEmailBar();}catch(e){}
   loadTradeRenames(); // shared trade renames (Firebase)
+  // the sidebar groups the trades the same way the export does, so the team's
+  // group choices have to be in hand before it is drawn
+  loadTradeGroups().then(()=>renderSB()).catch(()=>{});
   refreshBcaGrades(); // auto-update grades from BCA in background (7-day cache)
   loadTplsFromCloud(); // shared email templates (Firebase)
   loadMascot(); // shared mascot image (Firebase)
@@ -1344,14 +1371,97 @@ window.addEventListener('beforeunload',()=>{
 
 function getAllTrades(){const m={};records.forEach(r=>{if(r.trade)m[r.trade]=(m[r.trade]||0)+1;});return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0]));}
 function filterTrades(){tq=document.getElementById('tq').value.toLowerCase();renderSB();}
+// Which main groups are folded up in the sidebar (remembered on this machine)
+let _sbShut={};
+try{_sbShut=JSON.parse(localStorage.getItem(MY_PFX+'_sb_shut')||'{}')||{};}catch(e){_sbShut={};}
+function sbToggleGroup(ev,name){
+  ev.stopPropagation();
+  _sbShut[name]=!_sbShut[name];
+  try{localStorage.setItem(MY_PFX+'_sb_shut',JSON.stringify(_sbShut));}catch(e){}
+  renderSB();
+}
+// The trade list is shown under the SAME main groups as the Excel export, so
+// where a trade sits is visible here and not only inside the export dialog.
 function renderSB(){
   const all=getAllTrades();const total=records.length;
   document.getElementById('sbcnt').textContent=`${total} subcontractors · ${all.length} trades`;
   const f=all.filter(([t])=>!tq||t.toLowerCase().includes(tq));
   const ac=tq?records.filter(r=>r.trade.toLowerCase().includes(tq)).length:total;
   let h=`<div class="ti${activeTrade==='ALL'?' act':''}" onclick="setTrade('ALL')"><span class="tn">All Trades</span><span class="tc">${ac}</span></div>`;
-  f.forEach(([t,c])=>{const e=t.replace(/'/g,"\'").replace(/"/g,'&quot;');h+=`<div class="ti${activeTrade===t?' act':''}" onclick="setTrade('${e}')"><span class="tn">${t}</span><span class="trename" title="Rename this trade" onclick="renameTrade(event,'${e}')">✎</span><span class="tc">${c}</span></div>`;});
+  tradeGroupOf('');                               // make sure the map is built
+  const order=TRADE_GROUPS.map(g=>g[0]).concat(['Other Trades']);
+  const bucket={};order.forEach(n=>bucket[n]=[]);
+  f.forEach(row=>{const n=tgGroupName(row[0]);(bucket[n]||bucket['Other Trades']).push(row);});
+  order.forEach(name=>{
+    const list=bucket[name];if(!list.length)return;
+    const subs=list.reduce((n,row)=>n+row[1],0);
+    // while she is searching, every group with a hit is opened
+    const shut=!tq&&_sbShut[name];
+    const gsel=activeTrade==='GRP:'+name;
+    const en=name.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    h+=`<div class="ti sbgrp${gsel?' act':''}" onclick="setTrade('GRP:${en}')" title="Show every subcontractor in ${en} — drop a trade here to move it into this group" ondragover="sbDragOver(event)" ondragleave="sbDragLeave(event)" ondrop="sbDrop(event,'${en}')">`
+      +`<span class="sbcar" onclick="sbToggleGroup(event,'${en}')" title="${shut?'Open':'Fold'} this group">${shut?'▸':'▾'}</span>`
+      +`<span class="tn">${name}</span><span class="tc">${subs}</span></div>`;
+    if(shut)return;
+    list.forEach(([t,c])=>{const e=t.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      h+=`<div class="ti sbsub${activeTrade===t?' act':''}" onclick="setTrade('${e}')" draggable="true" data-t="${t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" title="Drag this trade onto a main group to move it" ondragstart="sbDragStart(event)" ondragend="sbDragEnd()" ondragover="sbDragOver(event)" ondragleave="sbDragLeave(event)" ondrop="sbDrop(event,'${en}')"><span class="tn">${t}</span>`
+        +`<span class="trename" title="Move this trade to another main group" onclick="pickGroup(event,'${e}')">⇅</span>`
+        +`<span class="trename" title="Rename this trade" onclick="renameTrade(event,'${e}')">✎</span>`
+        +`<span class="tc">${c}</span></div>`;});
+  });
   document.getElementById('tlist').innerHTML=h;
+}
+const sbGroupSel=()=>activeTrade.indexOf('GRP:')===0?activeTrade.slice(4):'';
+
+// ── drag a trade onto a main group (or onto another trade = into that trade's group) ──
+function sbDragStart(ev){
+  const t=ev.currentTarget.getAttribute('data-t');if(!t)return;
+  try{ev.dataTransfer.setData('text/plain',t);ev.dataTransfer.effectAllowed='move';}catch(e){}
+  window._sbDragTrade=t;
+}
+function sbDragOver(ev){if(!window._sbDragTrade)return;ev.preventDefault();try{ev.dataTransfer.dropEffect='move';}catch(e){}ev.currentTarget.classList.add('sbdrop');}
+function sbDragLeave(ev){if(!ev.currentTarget.contains(ev.relatedTarget))ev.currentTarget.classList.remove('sbdrop');}
+function sbDragEnd(){window._sbDragTrade=null;document.querySelectorAll('.sbdrop').forEach(e=>e.classList.remove('sbdrop'));}
+function sbDrop(ev,g){
+  ev.preventDefault();ev.stopPropagation();ev.currentTarget.classList.remove('sbdrop');
+  const t=window._sbDragTrade;window._sbDragTrade=null;
+  if(!t||tgGroupName(t)===g)return;
+  setTradeGroup(t,g);
+}
+
+// ── move a trade to another main group, from the trade list itself ──────────
+// This used to live behind a "⇅ Trade groups" button at the top, in a dialog
+// listing every trade at once. The groups are on the left now, so the move
+// belongs there too: ⇅ on a trade opens the list of groups.
+function closeGroupMenu(){const m=document.getElementById('tgMenu');if(m)m.remove();}
+function pickGroup(ev,trade){
+  ev.stopPropagation();closeGroupMenu();
+  const esc2=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  tradeGroupOf('');
+  const cur=tgGroupName(trade);
+  const names=TRADE_GROUPS.map(g=>g[0]).concat(['Other Trades']);
+  const m=document.createElement('div');m.id='tgMenu';m.className='tgmenu';
+  m.innerHTML='<div class="tgmh">Move “'+esc2(trade)+'” to</div>'
+    +names.map(n=>'<div class="tgmi'+(n===cur?' on':'')+'" data-g="'+esc2(n)+'">'
+      +(n===cur?'✓ ':'&nbsp;&nbsp;&nbsp;')+esc2(n)+'</div>').join('');
+  document.body.appendChild(m);
+  const r=ev.target.getBoundingClientRect();
+  m.style.left=Math.max(6,Math.min(r.left-20,window.innerWidth-250))+'px';
+  m.style.top=Math.min(r.bottom+4,window.innerHeight-m.offsetHeight-8)+'px';
+  m.onclick=e=>{e.stopPropagation();const g=e.target.getAttribute('data-g');
+    if(g){closeGroupMenu();setTradeGroup(trade,g);}};
+  setTimeout(()=>document.addEventListener('click',closeGroupMenu,{once:true}),0);
+}
+async function setTradeGroup(trade,g){
+  if(!trade)return;
+  const k=_tgKey(trade);
+  _tgOver=_tgOver||{};tradeGroupOf('');
+  const base=_tgMap[k],baseName=base?TRADE_GROUPS[base.g][0]:'Other Trades';
+  if(g===baseName)delete _tgOver[k];else _tgOver[k]=g;   // back where the list puts it = no override
+  _tgOver._v=1;                                          // keeps the node from being empty
+  renderSB();
+  try{await sset('trade_groups',_tgOver);toast('“'+trade+'” moved to '+g);}
+  catch(e){toast('Could not save the move — check your connection');}
 }
 function setTrade(t){activeTrade=t;renderSB();render();}
 // ── Rename a whole trade category (persists + syncs to team) ────
@@ -1605,7 +1715,9 @@ function toggleTrackFilter(){
 function getFilt(){
   const q=document.getElementById('mq').value.toLowerCase();
   return sortList(records.filter(r=>{
-    const mt=activeTrade==='ALL'||r.trade===activeTrade;
+    // a main group picked in the sidebar means every trade under it
+    const _g=sbGroupSel();
+    const mt=activeTrade==='ALL'||(_g?tgGroupName(r.trade)===_g:r.trade===activeTrade);
     const ms=!q||r.company.toLowerCase().includes(q)||(r.contact||'').toLowerCase().includes(q)||(r.tel||'').includes(q)||(r.hp||'').includes(q)||(r.email||'').toLowerCase().includes(q)||r.trade.toLowerCase().includes(q)||(r.remark||'').toLowerCase().includes(q)||getGrade(r).toLowerCase().includes(q)||(r.track||'').toLowerCase().includes(q);
     const st=statusMap[r.id]||{};
     const mc=cfMatch(st,r);
@@ -1920,7 +2032,8 @@ function toggleSiblingSel(id,cb){
 function openAdd(){
   eid=null;document.getElementById('mt').textContent='Add Subcontractor';
   ['fco','fct','ftel','fhp','fem','frm'].forEach(id=>document.getElementById(id).value='');
-  popTr();if(activeTrade!=='ALL')document.getElementById('ftr').value=activeTrade;
+  // a whole group is not a trade, so it must not be dropped into the trade box
+  popTr();if(activeTrade!=='ALL'&&!sbGroupSel())document.getElementById('ftr').value=activeTrade;
   hideSibRow();
   document.getElementById('mo').classList.add('open');
 }
@@ -2475,7 +2588,7 @@ function toggleSelectAllShown(){
   if(!ids.length){toast('Nothing to select');return;}
   const allSel=ids.every(id=>emailSel.has(id));
   if(allSel){ids.forEach(id=>emailSel.delete(id));toast('Cleared '+ids.length+' selected');}
-  else{ids.forEach(id=>emailSel.add(id));toast('Selected '+ids.length+(activeTrade==='ALL'?' (all shown)':' in '+activeTrade));}
+  else{ids.forEach(id=>emailSel.add(id));toast('Selected '+ids.length+(activeTrade==='ALL'?' (all shown)':' in '+(sbGroupSel()||activeTrade)));}
   saveEmailSel();render();updateEmailBar();
 }
 function updateSelAllBtn(){
@@ -2629,6 +2742,63 @@ async function init(){
 authReady.then(function(){init();}); // start only after sign-in (the directory is loaded by then)
 // The Backup button is shown only to the owner's account (a convenience, not a security rule)
 authReady.then(function(){try{var e=String(firebase.auth().currentUser.email||'').toLowerCase();if(e==='michellepon@weehur.com.sg'){var b=document.getElementById('bkBtn');if(b)b.style.display='';}if(/@weehur\.com\.sg$/.test(e)){var mb=document.getElementById('mailBtn');if(mb)mb.style.display='';}}catch(x){}});
+// Main groups of the Excel export (taken from the Plaza Singapura quotation list). Each main group holds its trades, in this order;
+// a trade not listed here goes under "Other Trades" at the end. Matching ignores capitals and punctuation.
+const TRADE_GROUPS=[
+ ["Preliminaries",["Accredited Checker (AC) (Standyby)","Arborist","Anti Termite Treatment & Pest Control (Mosqitoe, Rodent, Cockcroch)","BAS EPSS","BIM/ Virtual Design & Construction Requirements (VDC)","Cable Detection","CCTV for AI / Tower Crane / VSS System","CCTV Survey for Sewer Drain Line","Chair Lift","Concrete pump","Crawler Crane","Compressed Air System","Design For Safety Professional (DFSP)","Disinfection Cleaning Services","ECO","Enertainer (AMPD)","External Safety Audit","Fibre Optic Sensor","Green Mark Consultant","Gondola (Rental)","Hoarding Graphic & Project Signboard","In-house Consultant (for D&B project)","Instrumentation Works","Insurance (Project)","King-Post (Above-ground)","Land Surveyor","Lightning Alert System","Linen Chute System","Material Testing","Lorry Cranes","Mechanical Filling Compactor","Mobile App","Mobile Crane","Motorised Winch Machine","Noise Barrier","Noise & Vibration Monitoring System","Passenger Hoist (Rental to Material )","PE","Pre Condition Survey","Project Information Management System (PIMS)","Safety Officer","Scaffolding","Scissor Lift","Security Guard","Soil Investigation","Temporary Site Office / Worker Quarter","Time-Lapsed Camera / Photographs","Tower Crane","Tower Crane Operator","Tree Felling, Conservation & Transplant Services","Worker Quarter","Topographical Survey"]],
+ ["M & E Works",["M&E Package","ACMV Works","Electrical Works","Fire Protection Works","Sanitary & Plumbing Works","Lift Works","Escalator Works","Hot Water System","Platform Lift","Audio Visual (AV) System","Smoke Engineering","Lighting Supplier","Automation system","Car parking guidance system","Central Burning Chamber System","Communication & Security System","Electronic Parking System","Food Waste Treatment System","Insulation panel to Cold Room","Refilling/ Refuelling (Diesel) Station","Refrigeration system for Cold room","Water Features/ Swimming Pool Filtration Installation","Weighting Station System","Fire Sprinkler System","Lighting Manufacturer"]],
+ ["Structural Works",["Aluminium Formwork / Perimeter Protective Screen","Bondek Slab","Bored Pile Works","Climbing Formwork","Column Shoes","Concrete (Supply)","Controlled Demolition","Demolition","Diaphargm Wall","Earthworks","External Works","Flexible Loop & Slim Box","Fire Protection Coating","Minor Sewer","Precast Concrete Component (Supply)","RC Labour Works","RC Pile Works","MicroPiles","Rebar & Mesh (Supply)","Post Tensioning Works","Shotcrete Work to CBP Wall","Soil Improvement","Spalling concrete repair works","Structural Steel Works","Temporary Work & Soil Nail Work (ERSS)","Timber formwork (Supply only)","Splice Sleeve","Spun Pile Works","External Works (Driveway & Drain)","Soil Improvement Works","Steel Formwork System","Temporary Work / ERSS","Delta Beam","Prefab steel staircases"]],
+ ["Architectural Works",["3D Concrete Printing","ABC Waters Professional Consultancy Service","Acid-etched glass","Acoustic Consultancy Services","Acoustic Louvre, Door & Lining","Acoustic Cellulous Spray","Air Tight Door","Allan Block Retaining Wall System","Aluminium & Glazing Works","Aluminium Composite Roof","Arboriculture (Tree cutting & transplant)","Automatic Sliding Gate","Bespoke surface finishes (i.e Marmorino plaster/ Dragged Polished plaster / Venetian plaster)","Built in Furniture (Wardrobe / Kitchen Cabinet) - Interior Design","Carpark Equipment & Road Safety","Carpet","Ceiling & DryWall Partition Works","Climb Wall","Curtain Track","Cyber security Requirement (*Refer to Appendix 2)","Digital Lock for CCA unit","Dock Leveller Systems","Drywall","Dumpwaiter Lift","E-Mobile Charging Station","Epoxy Floor Coating & Hardener","Entrance Mat / Door Mat","Equirone Panel","Fencing & Wire Mesh","Flood Barrier","Fluted panel","Fire rated glass door/ glazing wall","Formliner","Gabion Wall & Geogrid","GEOBARRIER System","GFRC","Green Wall","Ironmongery","Indoor Range Solutions Specialist","Irrigation System","Jonite Grating","Kitchen Appliances","Lab Furniture/ ware","Laminate finish","Landscaping","Lay in Grid Glass Fibre Reinforced Ceiling System (GFRC Ceiling)","Lecture Theatre Seatings","Light fixture (Supply only)","Light Weight Concrete Panel","Loose Furnitures","Mechanised Parking System","Metal Cladding / Metal Roof","Metal Works","Mirror Works","Operable Wall System","Painting Works","PC Vent Brick / Glass Blocks/ Breeze Blocks (Supply)","Pebble Washes / Loose Pebble","Pedestrian Overhead Bridge (POB)","Performance Louvres & Screen","Playground,Exercise Equipment","Prepacked material","Privacy Screen","Projector Screen","PVC Cellular Door","PVC mesh fabric","Rainwater harvesting system","Raised Floor System","Raised Mobile Stage","Recyclable Handling Equipments","Refuse Handling Equipment","Roller Blind","Roller Shutter","Sail Shade","Sanitary Wares & Fittings","Signage Works","Siphonic Drainage System","Shower Screen","Solar Panel","Solid/ Quartz Surface Countertop","Sport Equipment & Running Track System (Singatrack)","Stainless Steel Works","Superflat Floor System","Supply of Tiles","Supply of Vinyl","Stamp Concrete / Concrete Inprint","Synthetic Grass System","System Furnitures","Tensile Membrane Roofing Sytem","Thermalrock S (Slab)","Tiling (Labour supply)","Timber & Fire Rated Doors","Timber Floor","Toilet Cubicles","Traffic Marshal (Supply labour)","Turnstile","Ultra High Performance Concrete","uPVC Skirting","Vibration Isolation","Wallpaper","Water heater","Waterproofing System","Wet Trade (Labour supply)","Cabinet&Wardrobe","Cooker Hob & Hooks","Epoxy hardcourt","Fast and Secure Access (FSA) - Smart lock system","Form Liner","Metal Works (Letter Box, Blast Door,ventilation sleeve&plate, Bicycle Rack, Ext & Int Drying rack, SS Hopper, metal door frame & MS gate","Permenant Gondola System","Solid surface","Tiler (Labour supply)","Aluminium Ramp","Anti-static high pressure laminate (HPL)","Automated Drying Clothes Rack","Bi-fold Door/ PD door","Corten Steel Works","Curtain Wall [CR16] & Windows [CR17]","Drying Clothes Rack","Grab Bar/ Curtain Track System","Graphic Sticker","Kitchen Equipment Specialist (Commercial)","Lockers System","Only for Curtain Wall [CR16]","Outdoor Furniture","Pocket Door System","Recycle Bins","Roof Tiles","Tactile"]],
+];
+const _tgKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+let _tgMap=null;
+let _tgOver=null; // trades YOU moved to another main group ({tradeKey: group name}); shared with the team through the database
+function tradeGroupOf(trade){
+  if(!_tgMap){_tgMap={};TRADE_GROUPS.forEach((g,gi)=>g[1].forEach((t,ti)=>{const k=_tgKey(t);if(!_tgMap[k])_tgMap[k]={g:gi,t:ti};}));}
+  const k=_tgKey(trade),o=_tgOver&&_tgOver[k];
+  if(o){const gi=TRADE_GROUPS.findIndex(g=>g[0]===o);return {g:gi>=0?gi:TRADE_GROUPS.length,t:1e5};} // moved trades go to the end of their group
+  return _tgMap[k]||null;
+}
+async function loadTradeGroups(){
+  try{const v=await sget('trade_groups');_tgOver=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};}catch(e){_tgOver=_tgOver||{};}
+  return _tgOver;
+}
+let _tgList=[];
+function tgGroupName(trade){const p=tradeGroupOf(trade);return (p&&p.g<TRADE_GROUPS.length)?TRADE_GROUPS[p.g][0]:'Other Trades';}
+async function showTradeGroups(){
+  await loadTradeGroups();tradeGroupOf('');
+  const set=new Set();records.forEach(r=>{if(r&&r.trade)set.add(r.trade);});_tgList=[...set];
+  let o=document.getElementById('tgPanel');if(o)o.remove();
+  o=document.createElement('div');o.id='tgPanel';
+  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  o.innerHTML='<div style="background:var(--sur,#fff);color:var(--tx,#222);border-radius:12px;max-width:720px;width:100%;max-height:88vh;display:flex;flex-direction:column;padding:16px 18px;font-size:13px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:15px">⇅ Trade groups for the Excel export</b><button class="btn" onclick="document.getElementById(\'tgPanel\').remove()">Close</button></div>'
+    +'<div style="color:var(--tx2,#666);font-size:12px;margin-bottom:8px">Choose which main group each trade goes under. Saved for the whole team and used the next time anyone presses Export. A trade you move goes to the end of its new group.</div>'
+    +'<input id="tgQ" oninput="tgPaint()" placeholder="Search a trade or a group…" style="padding:6px 9px;font-size:12px;border:1px solid var(--bdr2,#ccc);border-radius:6px;margin-bottom:8px;font-family:inherit" />'
+    +'<div id="tgRows" style="overflow:auto;flex:1"></div></div>';
+  o.onclick=e=>{if(e.target===o)o.remove();};
+  document.body.appendChild(o);tgPaint();
+}
+function tgPaint(){
+  const box=document.getElementById('tgRows');if(!box)return;const keep=box.scrollTop;
+  const q=_tgKey((document.getElementById('tgQ')||{}).value||'');
+  const names=TRADE_GROUPS.map(g=>g[0]).concat(['Other Trades']);
+  const rows=_tgList.map((t,i)=>({t,i,g:tgGroupName(t)})).filter(x=>!q||_tgKey(x.t).indexOf(q)>=0||_tgKey(x.g).indexOf(q)>=0)
+    .sort((a,b)=>names.indexOf(a.g)-names.indexOf(b.g)||a.t.localeCompare(b.t));
+  let h='',last='';
+  rows.forEach(x=>{
+    if(x.g!==last){last=x.g;h+='<div style="font-weight:700;background:#b3a2c7;color:#222;padding:4px 8px;margin-top:8px;border-radius:5px">'+mEsc(x.g)+'</div>';}
+    h+='<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:4px 6px;border-bottom:1px solid var(--bdr,#eee)"><span>'+mEsc(x.t)+'</span><select onchange="tgSet('+x.i+',this.value)" style="font-size:12px;padding:3px 5px">'+names.map(n=>'<option'+(n===x.g?' selected':'')+'>'+mEsc(n)+'</option>').join('')+'</select></div>';
+  });
+  box.innerHTML=h||'<div style="color:var(--tx3,#888);padding:10px">No trade found.</div>';box.scrollTop=keep;
+}
+// the old dialog's setter — one way of doing it is enough, so it goes through
+// the same function the trade list uses
+async function tgSet(i,g){
+  const t=_tgList[i];if(t===undefined)return;
+  await setTradeGroup(t,g);
+  tgPaint();
+}
 async function exportCSV(){
   const list=getFilt();
   const proj=currentProject?currentProject.name:'SubconHub · Private';
@@ -2646,8 +2816,9 @@ async function exportCSV(){
 
   toast('Generating Excel...');
   try{
+    await loadTradeGroups(); // trades the team moved to another main group
     const wb=new ExcelJS.Workbook();
-    const ws=wb.addWorksheet('QuotationList');
+    const ws=wb.addWorksheet('QuotationList',{properties:{outlineProperties:{summaryBelow:false,summaryRight:false}}}); // the +/- button sits on the trade row ABOVE its companies
 
     const fill =hex=>({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+hex}});
     const font =(bold,sz,hex='000000')=>({name:'Calibri',bold,size:sz,color:{argb:'FF'+hex}});
@@ -2740,12 +2911,25 @@ async function exportCSV(){
       tradeMap[t].push(r);
     });
 
-    let dr=8,rNo=1;
-    tradeOrder.forEach(trade=>{
+    // 3 levels, like the Plaza Singapura list:  main group (Preliminaries / M & E / Structural / Architectural)  >  trade  >  companies
+    const MAIN_FILL=fill('B3A2C7'),MAIN_FONT=font(true,10);
+    const buckets=TRADE_GROUPS.map(g=>({name:g[0],trades:[]}));buckets.push({name:'Other Trades',trades:[]});
+    tradeOrder.forEach(trade=>{const p=tradeGroupOf(trade);(p?buckets[p.g]:buckets[buckets.length-1]).trades.push({trade,pos:p?p.t:0});});
+    buckets.forEach(b=>b.trades.sort((x,y)=>x.pos-y.pos)); // the order of the list; "Other Trades" keep the order they have in the app
+
+    let dr=8;
+    buckets.forEach(bk=>{
+    if(!bk.trades.length)return;
+    COLS.forEach((_,i)=>{sc(ws.getCell(dr,i+1),undefined,MAIN_FILL,MAIN_FONT,LV,thinB);});
+    sc(ws.getCell(dr,3),bk.name,MAIN_FILL,MAIN_FONT,LV,thinB); // main group row: outline level 0
+    dr++;
+    let rNo=1; // numbering restarts in every main group
+    bk.trades.forEach(({trade})=>{
       const comps=tradeMap[trade];
       COLS.forEach((_,i)=>{sc(ws.getCell(dr,i+1),undefined,TRADE_FILL,TRADE_FONT,LV,thinB);});
       sc(ws.getCell(dr,2),rNo++,TRADE_FILL,TRADE_FONT,C,thinB);
       sc(ws.getCell(dr,3),trade,TRADE_FILL,TRADE_FONT,LV,thinB);
+      ws.getRow(dr).outlineLevel=1; // trade row: level 1
       dr++;
 
       comps.forEach(r=>{
@@ -2760,9 +2944,12 @@ async function exportCSV(){
         vals.forEach((v,i)=>{
           sc(ws.getCell(dr,i+1),v||undefined,bg,DATA_FONT,i>=10&&i<=22?C:LV,hairB);
         });
+        ws.getRow(dr).outlineLevel=2; // company row: level 2 (fold it with the [−] on its trade row)
         dr++;
       });
     });
+    });
+    ws.properties.outlineLevelRow=2; // tells Excel the sheet has 2 levels of grouping under the main groups
 
     ws.autoFilter={from:'A7',to:{row:dr-1,column:COLS.length}};
 
@@ -2855,8 +3042,15 @@ function mailNorm(s){return String(s||'').toLowerCase().replace(/&amp;/g,'&').re
 function mailEmails(s){return (String(s||'').match(/[A-Za-z0-9._%+'-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)||[]).map(x=>x.toLowerCase());}
 // msgs: [{id,subject,from,to,cc,date:'yyyy-mm-dd',snippet}]   mode: 'in' (received) | 'out' (sent)
 // returns {ticks:[{id,field,date,msgId,subject}], flags:[{id,why,msgId,subject,from,date}]}
+// "Addendum No.1", "Corrigendum 2", "Addendum Nos. 1 & 2" in a subject → [1], [2], [1,2]  (only 1–10, the Addendum boxes the app has)
+function mailAddendumNums(subj){
+  const out=[],re=/\b(?:addendum|addenda|corrigendum|corrigenda)\b[\s(:#-]*(?:nos?\b\.?|number)?[\s.:#-]*(\d{1,2}(?:\s*(?:,|&|and)\s*\d{1,2})*)/ig;let m;
+  while((m=re.exec(String(subj||'')))){m[1].split(/\s*(?:,|&|and)\s*/i).forEach(x=>{const n=+x;if(n>=1&&n<=10&&out.indexOf(n)<0)out.push(n);});}
+  return out.sort((a,b)=>a-b);
+}
+const MAIL_ADDENDUM=/\b(addend|corrigend)/i;
 function mailMatch(msgs,ctx,mode){
-  const proj=mailNorm(ctx.projectName),ticks=[],flags=[],threads=[],learn=[],tm=ctx.threadMap||{};
+  const proj=mailNorm(ctx.projectName),ticks=[],flags=[],threads=[],learn=[],skipped=[],pend={},tm=ctx.threadMap||{};
   const byEmail=new Map(),byDom=new Map();
   ctx.records.forEach(r=>{
     mailEmails(r.email).forEach(e=>{
@@ -2887,7 +3081,24 @@ function mailMatch(msgs,ctx,mode){
       let c=exact;const t=c.filter(r=>mailNorm(r.trade)&&subj.indexOf(mailNorm(r.trade))>=0);if(t.length)c=t;
       if(c.length>1)return; // company has several trades and the subject doesn't say which — don't guess
       if(m.threadId&&c.length===1)threads.push({threadId:m.threadId,id:c[0].id,date:m.date}); // remember: this thread = this company+trade
-      c.forEach(r=>{if(r.nfa||st(r.id).invDate)return;ticks.push({id:r.id,field:'invDate',date:m.date,msgId:m.id,subject:m.subject});});
+      // An email you SEND whose subject says "Addendum No.2" / "Corrigendum 1" ticks that Tender Addendum box (dated the day you sent it) —
+      // it is not an Invitation. The app only shows Addendum N after N-1 is ticked, and only for an invited company, so those are respected.
+      if(MAIL_ADDENDUM.test(m.subject||'')){
+        const nums=mailAddendumNums(m.subject);
+        c.forEach(r=>{
+          if(r.nfa)return;const s=st(r.id),p=pend[r.id]||(pend[r.id]={}),has=f=>!!(s[f]||p[f]);
+          if(s.noqDate)return;
+          if(!nums.length){skipped.push({id:r.id,why:'the subject says Addendum/Corrigendum but has no number (write e.g. “Addendum No.1”)',subject:m.subject});return;}
+          if(!has('invDate')){skipped.push({id:r.id,why:'the company is not marked Invited yet',subject:m.subject});return;}
+          nums.forEach(n=>{
+            const f='add'+n+'Date';if(has(f))return;
+            if(n>1&&!has('add'+(n-1)+'Date')){skipped.push({id:r.id,why:'Addendum No.'+(n-1)+' is not ticked yet — tick it first',subject:m.subject});return;}
+            p[f]=1;ticks.push({id:r.id,field:f,date:m.date,msgId:m.id,subject:m.subject});
+          });
+        });
+        return;
+      }
+      c.forEach(r=>{if(r.nfa||st(r.id).invDate)return;(pend[r.id]||(pend[r.id]={})).invDate=1;ticks.push({id:r.id,field:'invDate',date:m.date,msgId:m.id,subject:m.subject});});
       return;
     }
     // received mail
@@ -2921,7 +3132,7 @@ function mailMatch(msgs,ctx,mode){
     }
     if(dom.length&&titleOk){dom.filter(invited).forEach(r=>flag(r,'Reply with the project title from a different address at this company'));}
   });
-  return {ticks,flags,threads,learn};
+  return {ticks,flags,threads,learn,skipped};
 }
 
 // ── Learn contact details from a subcontractor's reply ───────────────
@@ -3240,7 +3451,9 @@ async function checkMail(interactive){
     render();
     const nFlag=Object.keys(mailFlags).length;
     const wantPanel=interactive||_mailShowWhenDone;_mailShowWhenDone=false;
-    if(wantPanel)showMailPanel(ticks,{scanned:inbox.length+sent.length,days});
+    const skippedAd=[];rOut.skipped.forEach(x=>{if(!skippedAd.some(y=>y.id===x.id&&y.why===x.why))skippedAd.push(x);});
+    if(wantPanel)showMailPanel(ticks,{scanned:inbox.length+sent.length,days,skipped:skippedAd});
+    else if(skippedAd.length)toast(skippedAd.length+' Addendum email'+(skippedAd.length>1?'s':'')+' not ticked — press ✉ Check mail to see why');
     if(!wantPanel&&(ticks.length||nFlag||nChanged))toast('Mail check: ticked '+ticks.length+(nChanged?', updated '+nChanged+' contact detail'+(nChanged>1?'s':'')+' ✎':'')+(nFlag?', '+nFlag+' to check ✉':''));
   }catch(e){
     console.warn('mail check:',e&&e.message||e);
@@ -3257,10 +3470,11 @@ function showMailPanel(ticks,info){
   o=document.createElement('div');o.id='mailPanel';
   o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   const fl=Object.keys(mailFlags).map(id=>mailFlags[id]);
-  const fld={invDate:'Invitation',qrcDate:'Quotation received',noqDate:'Not Quote'};
+  const fld={invDate:'Invitation',qrcDate:'Quotation received',noqDate:'Not Quote'};for(let i=1;i<=10;i++)fld['add'+i+'Date']='Tender Addendum No.'+i;
   let h='<div style="background:var(--sur,#fff);color:var(--tx,#222);border-radius:12px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:18px 20px;font-size:13px;box-shadow:0 10px 40px rgba(0,0,0,.3)">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">✉ Mail check — '+mEsc(currentProject?currentProject.name:'')+'</b><button class="btn" onclick="document.getElementById(\'mailPanel\').remove()">Close</button></div>';
   if(info)h+='<div style="color:var(--tx2,#666);margin-bottom:10px">Looked at '+info.scanned+' emails from the last '+info.days+' days.</div>';
+  if(info&&info.skipped&&info.skipped.length)h+='<div style="background:#fff7e6;border:1px solid #f0d9a8;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px"><b style="color:#9a4b00">Addendum / Corrigendum emails NOT ticked ('+info.skipped.length+')</b>'+info.skipped.map(s=>'<div style="margin-top:3px"><b>'+mEsc(recLabel(s.id))+'</b> — '+mEsc(s.why)+'<div style="color:var(--tx3,#888);font-size:11.5px">“'+mEsc(s.subject)+'”</div></div>').join('')+'</div>';
   h+='<div style="font-weight:600;margin:8px 0 4px;color:#17622b;display:flex;justify-content:space-between;align-items:center"><span>✎ Contact details updated from emails — please confirm ('+mailChanges.length+')</span>'+(mailChanges.length>1?'<button class="btn" onclick="mailConfirmAll()">✔ Confirm all</button>':'')+'</div>';
   h+=mailChanges.length?mailChanges.map(c=>'<div style="padding:6px 0;border-top:1px solid var(--bdr,#eee)"><b>'+mEsc(recLabel(c.id))+'</b> — '+MAIL_FLD[c.field]+'<div style="font-size:12.5px;margin-top:2px"><span style="color:#a02020;text-decoration:line-through">'+mEsc(c.old||'(empty)')+'</span> → <b style="color:#17622b">'+mEsc(c.new)+'</b></div><div style="color:var(--tx3,#888);font-size:11.5px">from '+mEsc(c.date)+' · '+mEsc(c.from)+' · “'+mEsc(c.subject)+'”</div><div style="margin-top:4px"><button class="btn" onclick="mailChangeConfirm(\''+mEsc(c.key)+'\')">✔ Confirm</button> <button class="btn" onclick="mailChangeUndo(\''+mEsc(c.key)+'\')">↶ Undo</button> <button class="btn" onclick="mailShow('+c.id+')">Show this company</button></div></div>').join(''):'<div style="color:var(--tx3,#888)">Nothing waiting.</div>';
   if(ticks){
