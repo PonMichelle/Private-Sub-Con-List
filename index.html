@@ -125,6 +125,9 @@ html .ti.sbgrp:hover .tn,html .ti.sbsub:hover .tn{transform:none}
 html .ti.sbsub,html.toon .ti.sbsub{font-weight:400;font-size:11.5px;margin-left:16px;padding-left:12px;border-left:3px solid #c9c5dc;border-radius:0 8px 8px 0}
 html.toon .ti.sbsub.act,html .ti.sbsub.act{font-weight:700;border-left-color:var(--ink,#2a3354)}
 .ti.sbsub[draggable=true]{cursor:grab}
+.sbdockbtn{flex:1 1 44%;padding:10px 6px;text-align:center;font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;background:#fff;color:#24203a;border-radius:8px;border:2px solid #fff}
+.sbdockbtn.cur{opacity:.45}
+.sbdockbtn.sbdrop{background:#ffd23f;border:2px dashed #ff8a00;outline:none}
 html .ti.sbdrop,html.toon .ti.sbdrop{outline:3px dashed #ff8a00;outline-offset:-3px;background:#fff3d6;color:#24203a}
 .tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .trename{opacity:0;font-size:12px;color:var(--tx3);cursor:pointer;padding:0 3px;flex-shrink:0}
@@ -740,7 +743,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-20i</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-23a</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -1418,13 +1421,43 @@ function sbDragStart(ev){
   const t=ev.currentTarget.getAttribute('data-t');if(!t)return;
   try{ev.dataTransfer.setData('text/plain',t);ev.dataTransfer.effectAllowed='move';}catch(e){}
   window._sbDragTrade=t;
+  // the list is long and the other groups are often off-screen, so while dragging: (1) the list scrolls by itself near its top/bottom edge,
+  // (2) a bar with every main group stays at the bottom of the screen — drop the trade on any of them
+  setTimeout(()=>{if(window._sbDragTrade)sbShowDock();},0);
+  document.addEventListener('dragover',sbAutoScroll);
 }
+function sbScroller(){
+  let el=document.getElementById('tlist');
+  while(el&&el!==document.body){const cs=getComputedStyle(el);if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+2)return el;el=el.parentElement;}
+  return null;
+}
+function sbAutoScroll(ev){
+  if(!window._sbDragTrade)return;
+  const sc=sbScroller();if(!sc)return;
+  const r=sc.getBoundingClientRect();
+  if(ev.clientX<r.left||ev.clientX>r.right)return;
+  const dk=document.getElementById('sbDock'),bot=Math.min(r.bottom,dk?dk.getBoundingClientRect().top:r.bottom); // the group bar covers the bottom of the list
+  const z=80; // pixels from the edge where scrolling starts
+  if(ev.clientY<r.top+z)sc.scrollTop-=Math.max(8,Math.round((r.top+z-ev.clientY)/3));
+  else if(ev.clientY>bot-z&&ev.clientY<=bot)sc.scrollTop+=Math.max(8,Math.round((ev.clientY-(bot-z))/3));
+}
+function sbShowDock(){
+  sbHideDock();
+  const sb=document.getElementById('sidebar');if(!sb)return;const r=sb.getBoundingClientRect();
+  const names=TRADE_GROUPS.map(g=>g[0]).concat(['Other Trades']),cur=tgGroupName(window._sbDragTrade||'');
+  const d=document.createElement('div');d.id='sbDock';
+  d.style.cssText='position:fixed;z-index:10000;left:'+Math.max(0,r.left)+'px;width:'+Math.max(240,r.width)+'px;bottom:0;background:#24203a;padding:6px;display:flex;flex-wrap:wrap;gap:5px;box-shadow:0 -6px 20px rgba(0,0,0,.35)';
+  d.innerHTML='<div style="width:100%;color:#fff;font-size:10.5px;opacity:.85">Drop on a group to move “'+mEsc(window._sbDragTrade)+'” there</div>'
+    +names.map(n=>'<div class="sbdockbtn'+(n===cur?' cur':'')+'" ondragover="sbDragOver(event)" ondragleave="sbDragLeave(event)" ondrop="sbDrop(event,\''+n.replace(/'/g,"\\'")+'\')">'+mEsc(n)+'</div>').join('');
+  document.body.appendChild(d);
+}
+function sbHideDock(){const d=document.getElementById('sbDock');if(d)d.remove();}
 function sbDragOver(ev){if(!window._sbDragTrade)return;ev.preventDefault();try{ev.dataTransfer.dropEffect='move';}catch(e){}ev.currentTarget.classList.add('sbdrop');}
 function sbDragLeave(ev){if(!ev.currentTarget.contains(ev.relatedTarget))ev.currentTarget.classList.remove('sbdrop');}
-function sbDragEnd(){window._sbDragTrade=null;document.querySelectorAll('.sbdrop').forEach(e=>e.classList.remove('sbdrop'));}
+function sbDragEnd(){window._sbDragTrade=null;sbHideDock();document.removeEventListener('dragover',sbAutoScroll);document.querySelectorAll('.sbdrop').forEach(e=>e.classList.remove('sbdrop'));}
 function sbDrop(ev,g){
   ev.preventDefault();ev.stopPropagation();ev.currentTarget.classList.remove('sbdrop');
-  const t=window._sbDragTrade;window._sbDragTrade=null;
+  const t=window._sbDragTrade;window._sbDragTrade=null;sbHideDock();document.removeEventListener('dragover',sbAutoScroll);
   if(!t||tgGroupName(t)===g)return;
   setTradeGroup(t,g);
 }
