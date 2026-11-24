@@ -743,7 +743,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-23a</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-24b</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -3039,7 +3039,7 @@ async function downloadBackup(){
 //     looks like a decline, not invited yet) is NOT ticked — it gets a ✉ "Reply — check" flag instead.
 const MAIL_FREE=/^(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|singnet|pacific|starhub|qq|163|126|proton|protonmail)\./i;
 const MAIL_AUTO=/automatic reply|auto.?reply|out of office|undeliverable|delivery status|delivery failure|mailer-daemon|postmaster|read:\s/i;
-const MAIL_DECLINE=/\b(regret|unable to (quote|submit|tender|participate|provide)|not (able|interested|keen)|decline|no quote|not quoting|will not (be )?(quot|submit|tender))/i;
+const MAIL_DECLINE=/\b(regret|unable to (quote|submit|tender|participate|provide|assist|help|proceed|accommodate|take)|cannot (quote|submit|tender|participate|assist|help|proceed)|not (able|interested|keen)|decline|no quote|not quoting|will not (be )?(quot|submit|tender))/i;
 // MAIL_DECLINE above is deliberately loose - it only raises a flag, and
 // "we regret the delay" or "not able to attend the site visit" must not slip
 // past it. This one is what will tick "Not Quote" on its own, so it holds only
@@ -3049,8 +3049,12 @@ const MAIL_DECLINE_SURE=new RegExp([
   "\\bno\\s*quote\\b",
   "\\bnot\\s+quoting\\b",
   "\\b(?:will|shall|would)\\s+not\\s+be\\s+(?:quoting|submitting|tendering|bidding)",
-  "\\b(?:un|not\\s+)?able\\s+to\\s+(?:quote|submit|tender|offer|bid|participate)\\b",
-  "\\b(?:cannot|can\\s?not|can'?t)\\s+(?:quote|submit|tender|offer|bid|participate)\\b",
+  // "unable to assist / help / proceed" is how many firms say no ("We sincerely apologize we are unable to assist at this point of time").
+  // The "un"/"not" in front is REQUIRED: "we are able to quote" must not count as a refusal.
+  "\\b(?:unable|not\\s+able)\\s+to\\s+(?:quote|submit|tender|offer|bid|participate|assist|help|support|proceed|accommodate|undertake|take\\s+(?:up|on)|price|pursue|entertain)\\b",
+  "\\b(?:cannot|can\\s?not|can'?t)\\s+(?:quote|submit|tender|offer|bid|participate|assist|help|proceed|accommodate|undertake|take\\s+(?:up|on))\\b",
+  "\\bapologi[sz]e[^.!?]{0,80}?(?:unable|cannot|can'?t|not\\s+able)\\b",
+  "\\bunfortunately[^.!?]{0,60}?(?:unable|cannot|can'?t|not\\s+able|not\\s+(?:be\\s+)?(?:quoting|submitting|tendering|participating))",
   // what is declined has to be said: "we decline any request for further
   // discount" is a negotiating line in a reply that DOES carry a price
   "\\bdeclin(?:e|ing)\\s+(?:to\\s+)?(?:quote|tender|submit|bid|particip)",
@@ -3093,6 +3097,17 @@ function mailMatch(msgs,ctx,mode){
     });
   });
   const uniq=a=>a.filter((r,i)=>a.indexOf(r)===i);
+  // Which of a company's records (trades) is this email about? 1) the record's trade name appears in the subject;
+  // 2) otherwise the record whose trade shares the most real words with the subject, if one clearly wins
+  // ("Vibration Monitoring" in the subject → the record "Noise & Vibration Monitoring System"); 3) otherwise all of them (ambiguous).
+  const GEN=/^(works?|systems?|services?|service|supply|supplier|installation|and|the|for|of|project|projects|tender|quote|quotation|invitation|enquiry|general|specialist|pte|ltd)$/;
+  const tradeScore=(r,s)=>{const w=mailNorm(r.trade).split(' ').filter(x=>x.length>=3&&!GEN.test(x)),pad=' '+s+' ';return w.filter(x=>pad.indexOf(' '+x+' ')>=0).length;};
+  const byTrade=(c,s)=>{
+    const t=c.filter(r=>mailNorm(r.trade)&&s.indexOf(mailNorm(r.trade))>=0);if(t.length)return t;
+    if(c.length<2)return c;
+    const sc=c.map(r=>tradeScore(r,s)),mx=Math.max.apply(null,sc);
+    return (mx>=1&&sc.filter(x=>x===mx).length===1)?[c[sc.indexOf(mx)]]:c;
+  };
   msgs.forEach(m=>{
     if(MAIL_AUTO.test((m.subject||'')+' '+(m.from||'')))return;
     const subj=mailNorm(m.subject),titleOk=!!proj&&subj.indexOf(proj)>=0;
@@ -3111,8 +3126,11 @@ function mailMatch(msgs,ctx,mode){
     const flag=(r,why,x)=>flags.push(Object.assign({id:r.id,why,msgId:m.id,subject:m.subject,from:m.from,date:m.date},x||{}));
     if(mode==='out'){
       if(!titleOk||otherProj||!exact.length)return;
-      let c=exact;const t=c.filter(r=>mailNorm(r.trade)&&subj.indexOf(mailNorm(r.trade))>=0);if(t.length)c=t;
-      if(c.length>1)return; // company has several trades and the subject doesn't say which — don't guess
+      let c=byTrade(exact,subj);
+      if(c.length>1){ // company has several trades and the subject doesn't say which — don't guess, but SAY so (it used to be silent)
+        if(!MAIL_ADDENDUM.test(m.subject||''))skipped.push({id:c[0].id,why:'Invitation not ticked: this email address is in the directory under '+c.length+' trades ('+c.map(r=>r.trade).join('; ')+') and the subject doesn’t name one of them — tick the right one yourself',subject:m.subject});
+        return;
+      }
       if(m.threadId&&c.length===1)threads.push({threadId:m.threadId,id:c[0].id,date:m.date}); // remember: this thread = this company+trade
       // An email you SEND whose subject says "Addendum No.2" / "Corrigendum 1" ticks that Tender Addendum box (dated the day you sent it) —
       // it is not an Invitation. The app only shows Addendum N after N-1 is ticked, and only for an invited company, so those are respected.
@@ -3140,7 +3158,9 @@ function mailMatch(msgs,ctx,mode){
     let threadHit=null;
     if(m.threadId&&tm[m.threadId]){threadHit=ctx.records.find(r=>r.id===tm[m.threadId].id)||null;if(threadHit)exact=uniq(exact.concat([threadHit]));}
     if(exact.length){
-      let c=exact;const t=c.filter(r=>mailNorm(r.trade)&&subj.indexOf(mailNorm(r.trade))>=0);if(t.length)c=t;
+      let c=exact;const t=c.filter(r=>mailNorm(r.trade)&&subj.indexOf(mailNorm(r.trade))>=0);
+      if(!t.length){const b=byTrade(c,subj);if(b.length<c.length)b.forEach(x=>t.push(x));}
+      if(t.length)c=t;
       if(threadHit)c=[threadHit];
       const tgt=threadHit||(c.length===1?c[0]:null); // the one company we are sure this reply is from → may learn contact details
       if(tgt&&(titleOk||threadHit)&&!tgt.nfa)learn.push({id:tgt.id,msg:m});
@@ -3448,7 +3468,9 @@ async function checkMail(interactive){
         }else if((statusMap[f.id]||{}).invDate){
           // read in full it is NOT a refusal - "we regret the delay in
           // replying" on a mail that encloses a price - so it gets the
-          // Quotation received tick the suspicion was holding back
+          // Quotation received tick the suspicion was holding back.
+          // But if the text STILL sounds like a refusal in words the list above does not know, do not guess "quotation": keep it flagged for her to read.
+          if(/\b(regrets?|declin\w*|unable|cannot|can'?t|not\s+able|unfortunately)\b/i.test(own)&&!/\bregret(?:\s+the)?\s+(?:the\s+)?delay/i.test(own))continue;
           rIn.ticks.push({id:f.id,field:'qrcDate',date:f.date,msgId:f.msgId,subject:f.subject});
         }else continue;                           // not invited here — leave it to her
         rIn.flags=rIn.flags.filter(x=>x!==f);
@@ -3486,7 +3508,7 @@ async function checkMail(interactive){
     const wantPanel=interactive||_mailShowWhenDone;_mailShowWhenDone=false;
     const skippedAd=[];rOut.skipped.forEach(x=>{if(!skippedAd.some(y=>y.id===x.id&&y.why===x.why))skippedAd.push(x);});
     if(wantPanel)showMailPanel(ticks,{scanned:inbox.length+sent.length,days,skipped:skippedAd});
-    else if(skippedAd.length)toast(skippedAd.length+' Addendum email'+(skippedAd.length>1?'s':'')+' not ticked — press ✉ Check mail to see why');
+    else if(skippedAd.length)toast(skippedAd.length+' sent email'+(skippedAd.length>1?'s':'')+' not ticked — press ✉ Check mail to see why');
     if(!wantPanel&&(ticks.length||nFlag||nChanged))toast('Mail check: ticked '+ticks.length+(nChanged?', updated '+nChanged+' contact detail'+(nChanged>1?'s':'')+' ✎':'')+(nFlag?', '+nFlag+' to check ✉':''));
   }catch(e){
     console.warn('mail check:',e&&e.message||e);
@@ -3507,7 +3529,7 @@ function showMailPanel(ticks,info){
   let h='<div style="background:var(--sur,#fff);color:var(--tx,#222);border-radius:12px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:18px 20px;font-size:13px;box-shadow:0 10px 40px rgba(0,0,0,.3)">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">✉ Mail check — '+mEsc(currentProject?currentProject.name:'')+'</b><button class="btn" onclick="document.getElementById(\'mailPanel\').remove()">Close</button></div>';
   if(info)h+='<div style="color:var(--tx2,#666);margin-bottom:10px">Looked at '+info.scanned+' emails from the last '+info.days+' days.</div>';
-  if(info&&info.skipped&&info.skipped.length)h+='<div style="background:#fff7e6;border:1px solid #f0d9a8;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px"><b style="color:#9a4b00">Addendum / Corrigendum emails NOT ticked ('+info.skipped.length+')</b>'+info.skipped.map(s=>'<div style="margin-top:3px"><b>'+mEsc(recLabel(s.id))+'</b> — '+mEsc(s.why)+'<div style="color:var(--tx3,#888);font-size:11.5px">“'+mEsc(s.subject)+'”</div></div>').join('')+'</div>';
+  if(info&&info.skipped&&info.skipped.length)h+='<div style="background:#fff7e6;border:1px solid #f0d9a8;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px"><b style="color:#9a4b00">Sent emails NOT ticked — and why ('+info.skipped.length+')</b>'+info.skipped.map(s=>'<div style="margin-top:3px"><b>'+mEsc(recLabel(s.id))+'</b> — '+mEsc(s.why)+'<div style="color:var(--tx3,#888);font-size:11.5px">“'+mEsc(s.subject)+'”</div></div>').join('')+'</div>';
   h+='<div style="font-weight:600;margin:8px 0 4px;color:#17622b;display:flex;justify-content:space-between;align-items:center"><span>✎ Contact details updated from emails — please confirm ('+mailChanges.length+')</span>'+(mailChanges.length>1?'<button class="btn" onclick="mailConfirmAll()">✔ Confirm all</button>':'')+'</div>';
   h+=mailChanges.length?mailChanges.map(c=>'<div style="padding:6px 0;border-top:1px solid var(--bdr,#eee)"><b>'+mEsc(recLabel(c.id))+'</b> — '+MAIL_FLD[c.field]+'<div style="font-size:12.5px;margin-top:2px"><span style="color:#a02020;text-decoration:line-through">'+mEsc(c.old||'(empty)')+'</span> → <b style="color:#17622b">'+mEsc(c.new)+'</b></div><div style="color:var(--tx3,#888);font-size:11.5px">from '+mEsc(c.date)+' · '+mEsc(c.from)+' · “'+mEsc(c.subject)+'”</div><div style="margin-top:4px"><button class="btn" onclick="mailChangeConfirm(\''+mEsc(c.key)+'\')">✔ Confirm</button> <button class="btn" onclick="mailChangeUndo(\''+mEsc(c.key)+'\')">↶ Undo</button> <button class="btn" onclick="mailShow('+c.id+')">Show this company</button></div></div>').join(''):'<div style="color:var(--tx3,#888)">Nothing waiting.</div>';
   if(ticks){
