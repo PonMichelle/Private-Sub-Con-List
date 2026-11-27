@@ -743,7 +743,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-24b</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-27a</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -1866,6 +1866,7 @@ function render(){
           <div class="cfoot">
             <button class="btn" onclick="openEdit(${r.id})">Edit</button>
             <button class="btn" onclick="openDuplicate(${r.id})" title="Copy this subcontractor's details into a new record under a different trade">⧉ Duplicate</button>
+            <button class="btn" onclick="copyToOtherApp(${r.id})" title="Copy this subcontractor, with all its contact details, into the ${OTHER_NAME} as a new entry there (nothing here or there is changed)">➜ To ${OTHER_NAME}</button>
             <button class="btn" style="color:var(--red)" onclick="delRec(${r.id})">Remove</button>
           </div>
           ${siblingTradesHtml(r)}
@@ -2213,6 +2214,43 @@ async function syncToOtherApp(names,shared){
   }catch(e){
     console.error('syncToOtherApp failed:',e);
     toast('Could not update the '+OTHER_NAME+' — please try again');
+  }
+}
+// Copy ONE subcontractor (this company + this trade) with all its contact details into the OTHER app as a NEW entry.
+// Adds only: nothing here is changed, and nothing already in the other app is changed. If the other app already has this
+// company under this trade, nothing is copied (use Edit → "also update … in the other app" to refresh its details).
+async function copyToOtherApp(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  if(!confirm('Copy "'+r.company+' — '+r.trade+'" with all its contact details to the '+OTHER_NAME+'?\n\nIt is added there as a new entry. Nothing changes here, and nothing already in the '+OTHER_NAME+' is changed.'))return;
+  try{
+    toast('Copying to the '+OTHER_NAME+'…');
+    const db=await initFirebase(),P=OTHER_PFX;
+    const ovKey=P+'/'+fbKey(P+'_subcon_overrides'),recKey=P+'/'+fbKey(P+'_subcon_records');
+    const [bSnap,oSnap,rSnap]=await Promise.all([db.ref(P+'/base_dir').get(),db.ref(ovKey).get(),db.ref(recKey).get()]);
+    let base=bSnap.val()||[];if(!Array.isArray(base))base=Object.keys(base).sort((a,b)=>a-b).map(k=>base[k]);
+    base=base.filter(Boolean);
+    const ovv=oSnap.val()||{},ov=ovv.ov||{};
+    let dl=ovv.del||[];if(!Array.isArray(dl))dl=Object.values(dl);const deleted=new Set(dl);
+    let adds=rSnap.val()||[];if(!Array.isArray(adds))adds=Object.values(adds);
+    const ck=bcaNorm(r.company),tk=mailNorm(r.trade);
+    const live=[];
+    base.forEach(b=>{if(deleted.has(b.id))return;live.push(Object.assign({},b,ov[b.id]||{}));});
+    adds.forEach(a=>{if(a&&a.id>base.length)live.push(a);});
+    const dup=live.find(x=>bcaNorm(x.company)===ck&&mailNorm(x.trade)===tk);
+    if(dup){alert('"'+r.company+'" is already in the '+OTHER_NAME+' under "'+(dup.trade||r.trade)+'", so nothing was copied.\n\nTo bring its latest contact details across, open Edit on this card and tick "Also update … in the '+OTHER_NAME+'".');return;}
+    const rec=JSON.parse(JSON.stringify({company:r.company,trade:r.trade,contact:r.contact||'',tel:r.tel||'',hp:r.hp||'',phone:r.phone||r.tel||r.hp||'',
+      email:r.email||'',site:r.site||'',track:r.track||'',remark:r.remark||'',grade:r.grade||'',nfa:!!r.nfa,
+      addedBy:getUser(),addedAt:new Date().toISOString(),copiedFrom:MY_NAME}));
+    await db.ref(recKey).transaction(cur=>{
+      const arr=cur?(Array.isArray(cur)?cur.slice():Object.values(cur)):[];
+      const top=Math.max.apply(null,[base.length].concat(arr.map(x=>(x&&+x.id)||0)));
+      arr.push(Object.assign({id:top+1},rec)); // an added entry always has an id above the built-in list (the app tells them apart that way)
+      return arr;
+    });
+    toast('Copied "'+r.company+'" to the '+OTHER_NAME+' ✓');
+  }catch(e){
+    console.error('copyToOtherApp failed:',e);
+    toast('Could not copy to the '+OTHER_NAME+' — please try again');
   }
 }
 async function delRec(id){
