@@ -277,6 +277,9 @@ tr.selrow-em td{background:var(--bblue)!important}
 .sibchip{color:var(--blue);cursor:pointer;text-decoration:underline}
 .sibchip:hover{opacity:.75}
 .cfoot .btn{padding:3px 8px;font-size:10.5px}
+/* Edit · Duplicate · ➜ other app · Remove must stay on ONE row inside the card */
+.cfoot{flex-wrap:nowrap;min-width:0}
+html .cfoot .btn,html.toon .cfoot .btn{white-space:nowrap;padding-left:7px;padding-right:7px;min-width:0}
 .empty{text-align:center;padding:50px 20px;color:var(--tx3);grid-column:1/-1}
 .tw#ta{flex:1;overflow:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
@@ -743,7 +746,7 @@ html.noanim .toon-scene *{animation:none!important}
       </button>
       <div class="syncrow" style="margin-top:6px"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
       <div class="sbcnt" id="sbcnt"></div>
-      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-27a</div>
+      <div class="sbver" id="sbver" title="Code build date — if this doesn't match what you just uploaded, the live site is showing a cached/old version">Build 2026-11-27b</div>
     </div>
     <div class="tsw"><input type="text" id="tq" placeholder="Filter trades..." oninput="filterTrades()" /></div>
     <div class="tlist" id="tlist"></div>
@@ -1866,7 +1869,7 @@ function render(){
           <div class="cfoot">
             <button class="btn" onclick="openEdit(${r.id})">Edit</button>
             <button class="btn" onclick="openDuplicate(${r.id})" title="Copy this subcontractor's details into a new record under a different trade">⧉ Duplicate</button>
-            <button class="btn" onclick="copyToOtherApp(${r.id})" title="Copy this subcontractor, with all its contact details, into the ${OTHER_NAME} as a new entry there (nothing here or there is changed)">➜ To ${OTHER_NAME}</button>
+            <button class="btn" onclick="copyToOtherApp(${r.id})" title="Copy this subcontractor, with all its contact details, into the ${OTHER_NAME} as a new entry there (nothing here or there is changed)">➜ ${OTHER_PFX==='prv'?'Private':'HDB'}</button>
             <button class="btn" style="color:var(--red)" onclick="delRec(${r.id})">Remove</button>
           </div>
           ${siblingTradesHtml(r)}
